@@ -1,0 +1,4 @@
+POST /api/orders
+Request headers: Content-Type: application/json
+Request body: {"userId": 4821, "items": [{"sku": "A100", "qty": 2}]}
+Response 201: {"orderId": "ORD-00001", "status": "created", "total": 39.98, "itemCount": 2}
