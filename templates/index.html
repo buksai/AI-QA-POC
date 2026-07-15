@@ -2,81 +2,157 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>AI in QA Automation - POC Demo</title>
+<title>AI in QA Automation — POC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <style>
-  body { font-family: -apple-system, Arial, sans-serif; max-width: 940px; margin: 40px auto; padding: 0 20px; background: #0d1117; color: #e6edf3; }
-  h1 { font-size: 22px; margin-bottom: 4px; }
-  p.sub { color: #8b949e; margin-top: 0; margin-bottom: 8px; }
-  p.badge { display: inline-block; background: #1f2a37; border: 1px solid #30363d; color: #9fb4c7; font-size: 12px; padding: 4px 10px; border-radius: 20px; margin-bottom: 24px; }
-  .tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
-  .tabbtn { padding: 8px 14px; border-radius: 6px; border: 1px solid #30363d; background: #161b22; color: #e6edf3; cursor: pointer; font-size: 14px; }
-  .tabbtn.active { background: #21262d; border-color: #58a6ff; }
+  :root {
+    --bg: #0b0e14;
+    --panel: #12161f;
+    --panel-raised: #171c27;
+    --border: #232838;
+    --text: #dce3ef;
+    --muted: #6b7686;
+    --green: #3ddc84;
+    --amber: #ffb454;
+    --red: #ff5f56;
+    --blue: #4f8cff;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'Inter', -apple-system, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: var(--sans);
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+    background: var(--bg);
+    color: var(--text);
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 40px 40px;
+    background-attachment: fixed;
+    background-position: -1px -1px;
+  }
+  .masthead { border-bottom: 1px solid var(--border); padding-bottom: 20px; margin-bottom: 28px; }
+  .eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--blue); margin-bottom: 10px; }
+  h1 { font-family: var(--mono); font-size: 24px; font-weight: 600; margin: 0 0 6px; letter-spacing: -0.01em; }
+  .byline { font-size: 13px; color: var(--muted); margin: 0; }
+  .byline b { color: var(--text); font-weight: 500; }
+  .guardrail { display: inline-flex; align-items: center; gap: 8px; background: var(--panel); border: 1px solid var(--border); border-radius: 20px; padding: 6px 14px 6px 10px; font-size: 12px; color: var(--muted); margin-top: 16px; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 6px var(--green); flex-shrink: 0; }
+
+  .rack { display: flex; gap: 6px; margin-bottom: 24px; flex-wrap: wrap; }
+  .tabbtn { font-family: var(--mono); display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 6px; border: 1px solid var(--border); background: var(--panel); color: var(--muted); cursor: pointer; font-size: 12.5px; transition: all 0.15s; }
+  .tabbtn .led { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); }
+  .tabbtn.active { background: var(--panel-raised); border-color: var(--blue); color: var(--text); }
+  .tabbtn.active .led { background: var(--blue); box-shadow: 0 0 6px var(--blue); }
+  .tabbtn:hover { color: var(--text); }
+
   .panel { display: none; }
   .panel.active { display: block; }
-  textarea { width: 100%; box-sizing: border-box; font-family: monospace; font-size: 13px; padding: 10px; border-radius: 6px; border: 1px solid #30363d; background: #0d1117; color: #e6edf3; }
-  button.run { margin-top: 10px; padding: 8px 16px; border-radius: 6px; border: none; background: #238636; color: white; cursor: pointer; font-size: 14px; }
-  button.run:hover { background: #2ea043; }
-  .result { margin-top: 16px; background: #161b22; border-radius: 6px; padding: 14px 16px; font-size: 14px; line-height: 1.6; border: 1px solid #30363d; }
-  .result pre { background: #0d1117; padding: 10px; border-radius: 6px; overflow-x: auto; border: 1px solid #30363d; }
-  .result code { font-family: monospace; font-size: 13px; }
-  .result h2, .result h3 { margin-top: 14px; margin-bottom: 6px; font-size: 16px; }
-  .result table { border-collapse: collapse; }
-  .result td, .result th { border: 1px solid #30363d; padding: 4px 8px; }
-  .loading { color: #8b949e; font-size: 13px; }
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 20px; }
+  .card p.desc { font-size: 13px; color: var(--muted); margin: 0 0 12px; }
+  textarea {
+    width: 100%; box-sizing: border-box; font-family: var(--mono); font-size: 12.5px;
+    padding: 12px; border-radius: 6px; border: 1px solid var(--border);
+    background: var(--bg); color: var(--text); resize: vertical;
+  }
+  textarea:focus { outline: none; border-color: var(--blue); }
+
+  button.run {
+    margin-top: 12px; font-family: var(--mono); font-size: 12.5px; font-weight: 500;
+    padding: 9px 18px; border-radius: 6px; border: 1px solid var(--green);
+    background: rgba(61, 220, 132, 0.08); color: var(--green); cursor: pointer;
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  button.run:hover { background: rgba(61, 220, 132, 0.15); }
+  button.run:disabled { opacity: 0.4; cursor: not-allowed; }
+  button.run .arrow { transition: transform 0.15s; }
+  button.run:hover .arrow { transform: translateX(2px); }
+
+  .status-line { display: flex; align-items: center; gap: 8px; margin-top: 14px; font-family: var(--mono); font-size: 11.5px; color: var(--muted); }
+  .status-led { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
+  .status-led.running { background: var(--amber); box-shadow: 0 0 8px var(--amber); animation: pulse 1s infinite; }
+  .status-led.done { background: var(--green); box-shadow: 0 0 8px var(--green); }
+  @keyframes pulse { 50% { opacity: 0.4; } }
+
+  .result { margin-top: 14px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 16px 18px; font-size: 13.5px; line-height: 1.65; }
+  .result pre { background: var(--panel-raised); padding: 10px; border-radius: 6px; overflow-x: auto; border: 1px solid var(--border); }
+  .result code { font-family: var(--mono); font-size: 12.5px; }
+  .result h2, .result h3 { font-family: var(--mono); margin-top: 16px; margin-bottom: 6px; font-size: 14px; color: var(--blue); }
+  .result table { border-collapse: collapse; width: 100%; }
+  .result td, .result th { border: 1px solid var(--border); padding: 5px 9px; font-size: 12.5px; }
 </style>
 </head>
 <body>
-  <h1>AI in QA Automation — POC Demo</h1>
-  <p class="sub">DXC client QA process | live prototype | Huseynbala Gurbanli</p>
-  <p class="badge">Human-in-the-loop: AI proposes, engineers approve — nothing merges automatically</p>
+  <div class="masthead">
+    <div class="eyebrow">DXC Client — QA Automation Prototype</div>
+    <h1>AI in QA Automation</h1>
+    <p class="byline">Proof of concept · built by <b>Huseynbala Gurbanli</b></p>
+    <div class="guardrail"><span class="dot"></span> Human-in-the-loop — AI proposes, engineers approve. Nothing merges automatically.</div>
+  </div>
 
-  <div class="tabs">
-    <button class="tabbtn active" data-tab="heal">1. Self-healing test</button>
-    <button class="tabbtn" data-tab="impact">2. Impact analysis</button>
-    <button class="tabbtn" data-tab="api">3. API test generator</button>
-    <button class="tabbtn" data-tab="ticket">4. Auto ticket draft</button>
+  <div class="rack">
+    <button class="tabbtn active" data-tab="heal"><span class="led"></span>01 · Self-healing test</button>
+    <button class="tabbtn" data-tab="impact"><span class="led"></span>02 · Impact analysis</button>
+    <button class="tabbtn" data-tab="api"><span class="led"></span>03 · API test generator</button>
+    <button class="tabbtn" data-tab="ticket"><span class="led"></span>04 · Auto ticket draft</button>
   </div>
 
   <div id="panel-heal" class="panel active">
-    <p>Paste a failing test error/log. AI diagnoses root cause and proposes a fix.</p>
-    <textarea id="heal-input" rows="5">AssertionError: Element not found: //button[@id='submit-btn-old']
+    <div class="card">
+      <p class="desc">Paste a failing test error/log. AI diagnoses root cause and proposes a fix.</p>
+      <textarea id="heal-input" rows="5">AssertionError: Element not found: //button[@id='submit-btn-old']
 Test: test_checkout_submit
 Last passed: 3 days ago
 Recent commit: "renamed submit button id to submit-btn-v2 for A/B test"</textarea>
-    <br><button class="run" onclick="run('heal')">Analyze and propose fix</button>
-    <div id="heal-out"></div>
+      <br><button class="run" onclick="run('heal')">Analyze and propose fix <span class="arrow">→</span></button>
+      <div id="status-heal"></div>
+      <div id="heal-out"></div>
+    </div>
   </div>
 
   <div id="panel-impact" class="panel">
-    <p>Paste a PR/commit description. AI identifies which test scenarios are impacted and what updates they need.</p>
-    <textarea id="impact-input" rows="5">PR #482: Refactored checkout API response schema — added 'discountApplied' field,
+    <div class="card">
+      <p class="desc">Paste a PR/commit description. AI identifies which test scenarios are impacted and what updates they need.</p>
+      <textarea id="impact-input" rows="5">PR #482: Refactored checkout API response schema — added 'discountApplied' field,
 removed deprecated 'legacyTotal' field, changed 'status' enum values from
 [pending, complete] to [PENDING, COMPLETE, FAILED].
 Affected modules: checkout-service (backend), checkout-summary (frontend)</textarea>
-    <br><button class="run" onclick="run('impact')">Analyze impact on test suite</button>
-    <div id="impact-out"></div>
+      <br><button class="run" onclick="run('impact')">Analyze impact on test suite <span class="arrow">→</span></button>
+      <div id="status-impact"></div>
+      <div id="impact-out"></div>
+    </div>
   </div>
 
   <div id="panel-api" class="panel">
-    <p>Paste a captured API request/response (Fiddler-style). AI generates a test class.</p>
-    <textarea id="api-input" rows="6">POST /api/v2/orders
+    <div class="card">
+      <p class="desc">Paste a captured API request/response (Fiddler-style). AI generates a test class.</p>
+      <textarea id="api-input" rows="6">POST /api/v2/orders
 Request body: {"userId": 4821, "items": [{"sku":"A100","qty":2}], "coupon": null}
 Response 201: {"orderId":"ORD-99213","status":"created","total":59.98}</textarea>
-    <br><button class="run" onclick="run('api')">Generate test class</button>
-    <div id="api-out"></div>
+      <br><button class="run" onclick="run('api')">Generate test class <span class="arrow">→</span></button>
+      <div id="status-api"></div>
+      <div id="api-out"></div>
+    </div>
   </div>
 
   <div id="panel-ticket" class="panel">
-    <p>Paste a test failure result. AI drafts a ready-to-file bug ticket.</p>
-    <textarea id="ticket-input" rows="5">Test: test_login_with_valid_credentials
+    <div class="card">
+      <p class="desc">Paste a test failure result. AI drafts a ready-to-file bug ticket.</p>
+      <textarea id="ticket-input" rows="5">Test: test_login_with_valid_credentials
 Status: FAILED
 Expected: redirect to /dashboard
 Actual: stayed on /login, error toast "Invalid session token"
 Environment: staging, Chrome 126
 Timestamp: 2026-07-15 09:12 UTC</textarea>
-    <br><button class="run" onclick="run('ticket')">Draft ticket</button>
-    <div id="ticket-out"></div>
+      <br><button class="run" onclick="run('ticket')">Draft ticket <span class="arrow">→</span></button>
+      <div id="status-ticket"></div>
+      <div id="ticket-out"></div>
+    </div>
   </div>
 
 <script>
@@ -90,11 +166,16 @@ document.querySelectorAll('.tabbtn').forEach(btn => {
 });
 
 const endpoints = { heal: '/api/heal', impact: '/api/impact', api: '/api/apitest', ticket: '/api/ticket' };
+const labels = { heal: 'ANALYZING FAILURE', impact: 'READING DIFF', api: 'GENERATING TEST CLASS', ticket: 'DRAFTING TICKET' };
 
 async function run(kind) {
+  const btn = event.target.closest('button');
   const input = document.getElementById(kind + '-input').value;
+  const status = document.getElementById('status-' + kind);
   const out = document.getElementById(kind + '-out');
-  out.innerHTML = '<p class="loading">Analyzing...</p>';
+  btn.disabled = true;
+  status.innerHTML = '<div class="status-line"><span class="status-led running"></span>' + labels[kind] + '...</div>';
+  out.innerHTML = '';
   try {
     const res = await fetch(endpoints[kind], {
       method: 'POST',
@@ -102,13 +183,16 @@ async function run(kind) {
       body: JSON.stringify({ input })
     });
     const data = await res.json();
+    status.innerHTML = '<div class="status-line"><span class="status-led done"></span>COMPLETE</div>';
     out.innerHTML = '<div class="result"></div>';
     const box = out.querySelector('.result');
     if (window.marked) { box.innerHTML = marked.parse(data.result); }
     else { box.textContent = data.result; }
   } catch (e) {
-    out.innerHTML = '<p style="color:#f85149">Error: ' + e.message + '</p>';
+    status.innerHTML = '<div class="status-line" style="color:var(--red)"><span class="status-led" style="background:var(--red)"></span>ERROR</div>';
+    out.innerHTML = '<p style="color:var(--red)">' + e.message + '</p>';
   }
+  btn.disabled = false;
 }
 </script>
 </body>
