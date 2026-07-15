@@ -1,5 +1,7 @@
 # AI in QA Automation — POC
 
+**Author:** Huseynbala Gurbanli
+
 Working prototype demonstrating 4 AI-assisted QA use cases (matching the client brief):
 
 1. **Self-healing regression tests** — AI analyzes failures from test runs, identifies root cause, proposes code fixes
