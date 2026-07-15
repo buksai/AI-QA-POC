@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Real QA Scenario — Live Walkthrough</title>
+<style>
+  body { font-family: -apple-system, Arial, sans-serif; max-width: 980px; margin: 40px auto; padding: 0 20px; background: #0d1117; color: #e6edf3; }
+  h1 { font-size: 22px; margin-bottom: 4px; }
+  p.sub { color: #8b949e; margin-top: 0; margin-bottom: 24px; }
+  .step { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 16px 18px; margin-bottom: 14px; }
+  .step h3 { margin: 0 0 6px 0; font-size: 15px; }
+  .step p { margin: 0 0 10px 0; color: #9fb4c7; font-size: 13px; }
+  button { padding: 7px 14px; border-radius: 6px; border: none; background: #238636; color: white; cursor: pointer; font-size: 13px; }
+  button:hover { background: #2ea043; }
+  button.reset { background: #6e40c9; }
+  button.reset:hover { background: #8957e5; }
+  button:disabled { background: #30363d; cursor: not-allowed; }
+  pre { background: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 12px; margin-top: 10px; font-size: 12.5px; overflow-x: auto; white-space: pre-wrap; display: none; max-height: 400px; overflow-y: auto; }
+  .loading { color: #d29922; font-size: 13px; }
+  .topbar { display:flex; justify-content: space-between; align-items: center; }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div>
+      <h1>Real QA Scenario — Live Walkthrough</h1>
+      <p class="sub">Real pytest suite · real git commits · real AI calls — click through in order</p>
+    </div>
+    <button class="reset" onclick="doStep('reset')">Reset demo</button>
+  </div>
+
+  <div class="step">
+    <h3>1. Baseline — real test suite, currently green</h3>
+    <p>Runs the actual pytest suite against the live shop API.</p>
+    <button onclick="doStep('baseline')">Run baseline tests</button>
+    <pre id="out-baseline"></pre>
+  </div>
+
+  <div class="step">
+    <h3>2. UC3 — AI generates a new test from a Fiddler-style capture</h3>
+    <p>Reads captures/checkout_capture.txt, writes a real pytest file, then runs it.</p>
+    <button onclick="doStep('gen_test')">Generate + run new test</button>
+    <pre id="out-gen_test"></pre>
+  </div>
+
+  <div class="step">
+    <h3>3. A developer refactors the API (real code change + real git commit)</h3>
+    <p>Renames fields in shop_api.py and commits it — this is what will break the suite.</p>
+    <button onclick="doStep('dev_change')">Apply dev change</button>
+    <pre id="out-dev_change"></pre>
+  </div>
+
+  <div class="step">
+    <h3>4. UC2 — AI reads the real git diff and predicts impact</h3>
+    <p>No test has been run yet — this is a prediction from the code change alone.</p>
+    <button onclick="doStep('impact')">Analyze impact</button>
+    <pre id="out-impact"></pre>
+  </div>
+
+  <div class="step">
+    <h3>5. Re-run the suite — now genuinely broken</h3>
+    <p>Confirms the prediction: real failures caused by the real change.</p>
+    <button onclick="doStep('rerun')">Re-run tests</button>
+    <pre id="out-rerun"></pre>
+  </div>
+
+  <div class="step">
+    <h3>6. UC4 — AI drafts a ticket from the real failure output</h3>
+    <p>Writes an actual ticket file into tickets/.</p>
+    <button onclick="doStep('ticket')">Draft ticket</button>
+    <pre id="out-ticket"></pre>
+  </div>
+
+  <div class="step">
+    <h3>7. UC1 — Self-healing: AI proposes a fix, applies it, re-runs until green</h3>
+    <p>Auto-approves the proposed fix for this demo (a real config prompt exists in the CLI version).</p>
+    <button onclick="doStep('heal')">Heal the suite</button>
+    <pre id="out-heal"></pre>
+  </div>
+
+<script>
+async function doStep(name) {
+  const btn = event.target;
+  const out = document.getElementById('out-' + name);
+  btn.disabled = true;
+  out.style.display = 'block';
+  out.textContent = 'Running...';
+  try {
+    const res = await fetch('/api/step/' + name, { method: 'POST' });
+    const data = await res.json();
+    out.textContent = data.output || '(no output)';
+  } catch (e) {
+    out.textContent = 'Error: ' + e.message;
+  }
+  btn.disabled = false;
+}
+</script>
+</body>
+</html>
