@@ -2,167 +2,173 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Real QA Scenario — Live Walkthrough</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<title>real-scenario — Live Walkthrough</title>
 <style>
   :root {
-    --bg: #0b0e14;
-    --panel: #12161f;
-    --panel-raised: #171c27;
-    --border: #232838;
-    --text: #dce3ef;
-    --muted: #6b7686;
-    --green: #3ddc84;
-    --amber: #ffb454;
-    --red: #ff5f56;
-    --blue: #4f8cff;
-    --purple: #a684ff;
-    --mono: 'IBM Plex Mono', monospace;
-    --sans: 'Inter', -apple-system, sans-serif;
+    --bg: #0d1117;
+    --canvas: #010409;
+    --panel: #161b22;
+    --border: #30363d;
+    --border-muted: #21262d;
+    --text: #c9d1d9;
+    --muted: #8b949e;
+    --link: #58a6ff;
+    --green: #3fb950;
+    --green-btn: #238636;
+    --green-btn-hover: #2ea043;
+    --purple-btn: #8957e5;
+    --purple-btn-hover: #a371f7;
+    --amber: #d29922;
+    --red: #f85149;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
   }
   * { box-sizing: border-box; }
   body {
-    font-family: var(--sans);
-    max-width: 980px;
-    margin: 0 auto;
-    padding: 48px 24px 80px;
-    background: var(--bg);
-    color: var(--text);
-    background-image:
-      linear-gradient(var(--border) 1px, transparent 1px),
-      linear-gradient(90deg, var(--border) 1px, transparent 1px);
-    background-size: 40px 40px;
-    background-attachment: fixed;
-    background-position: -1px -1px;
+    font-family: var(--font); font-size: 14px; max-width: 1012px; margin: 0 auto;
+    padding: 24px 16px 64px; background: var(--canvas); color: var(--text); line-height: 1.5;
   }
-  .topbar { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 1px solid var(--border); padding-bottom: 20px; margin-bottom: 32px; }
-  .eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--purple); margin-bottom: 10px; }
-  h1 { font-family: var(--mono); font-size: 24px; font-weight: 600; margin: 0 0 6px; letter-spacing: -0.01em; }
-  .byline { font-size: 13px; color: var(--muted); margin: 0; }
-  .byline b { color: var(--text); font-weight: 500; }
-  button.reset {
-    font-family: var(--mono); font-size: 12px; padding: 9px 16px; border-radius: 6px;
-    border: 1px solid var(--purple); background: rgba(166, 132, 255, 0.08); color: var(--purple); cursor: pointer;
+  .repo-header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 1px solid var(--border-muted); padding-bottom: 16px; margin-bottom: 20px; }
+  .repo-path { font-size: 20px; margin: 0 0 4px; font-weight: 400; }
+  .repo-path b { font-weight: 600; }
+  .repo-path .sep { color: var(--muted); font-weight: 300; margin: 0 2px; }
+  .repo-meta { font-size: 12px; color: var(--muted); margin: 0; }
+
+  button.btn-reset {
+    font-family: var(--font); font-size: 12px; font-weight: 500; padding: 5px 14px; border-radius: 6px;
+    border: 1px solid rgba(240,246,252,0.1); background: var(--purple-btn); color: #fff; cursor: pointer;
   }
-  button.reset:hover { background: rgba(166, 132, 255, 0.16); }
+  button.btn-reset:hover { background: var(--purple-btn-hover); }
 
-  .rail { position: relative; padding-left: 28px; }
-  .rail::before { content: ''; position: absolute; left: 9px; top: 8px; bottom: 8px; width: 1px; background: var(--border); }
-
-  .step { position: relative; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 18px 20px; margin-bottom: 12px; }
-  .step-marker {
-    position: absolute; left: -28px; top: 22px; width: 19px; height: 19px; border-radius: 50%;
-    background: var(--bg); border: 2px solid var(--border); display: flex; align-items: center; justify-content: center;
-    font-family: var(--mono); font-size: 9px; color: var(--muted); z-index: 1;
+  .commit-list { border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+  .commit-row {
+    display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px;
+    border-bottom: 1px solid var(--border); background: var(--panel);
   }
-  .step.idle .step-marker { border-color: var(--border); }
-  .step.running .step-marker { border-color: var(--amber); color: var(--amber); box-shadow: 0 0 8px rgba(255,180,84,0.5); animation: pulse 1s infinite; }
-  .step.done .step-marker { border-color: var(--green); color: var(--green); background: rgba(61,220,132,0.1); }
-  @keyframes pulse { 50% { opacity: 0.5; } }
-
-  .step h3 { font-family: var(--mono); margin: 0 0 6px 0; font-size: 14px; font-weight: 500; }
-  .step .tag { display: inline-block; font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em; color: var(--blue); background: rgba(79,140,255,0.1); border: 1px solid rgba(79,140,255,0.25); border-radius: 4px; padding: 2px 6px; margin-right: 8px; vertical-align: middle; }
-  .step p.desc { margin: 0 0 12px 0; color: var(--muted); font-size: 13px; }
-
-  button.step-btn {
-    font-family: var(--mono); font-size: 12.5px; font-weight: 500; padding: 8px 16px; border-radius: 6px;
-    border: 1px solid var(--green); background: rgba(61,220,132,0.08); color: var(--green); cursor: pointer;
+  .commit-row:last-child { border-bottom: none; }
+  .commit-icon {
+    width: 28px; height: 28px; border-radius: 50%; background: var(--canvas); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-family: var(--mono);
+    font-size: 11px; color: var(--muted); margin-top: 2px;
   }
-  button.step-btn:hover { background: rgba(61,220,132,0.15); }
-  button.step-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .commit-row.done .commit-icon { border-color: var(--green); color: var(--green); background: rgba(63,185,80,0.1); }
+  .commit-row.running .commit-icon { border-color: var(--amber); color: var(--amber); }
+  .commit-body { flex: 1; min-width: 0; }
+  .commit-title { font-weight: 600; font-size: 13.5px; margin: 0 0 2px; }
+  .commit-title .use-case { font-family: var(--mono); font-size: 10.5px; font-weight: 500; color: var(--link); background: rgba(56,139,253,0.1); border: 1px solid rgba(56,139,253,0.25); border-radius: 4px; padding: 1px 6px; margin-right: 8px; vertical-align: 1px; }
+  .commit-desc { font-size: 12.5px; color: var(--muted); margin: 0 0 10px; }
+
+  button.btn-step {
+    font-family: var(--font); font-size: 12.5px; font-weight: 500; padding: 4px 12px; border-radius: 6px;
+    border: 1px solid rgba(240,246,252,0.1); background: var(--green-btn); color: #fff; cursor: pointer;
+  }
+  button.btn-step:hover { background: var(--green-btn-hover); }
+  button.btn-step:disabled { opacity: 0.5; cursor: not-allowed; }
 
   pre {
-    background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 14px;
-    margin-top: 12px; font-family: var(--mono); font-size: 12px; overflow-x: auto; white-space: pre-wrap;
-    display: none; max-height: 400px; overflow-y: auto; color: var(--text); line-height: 1.5;
+    background: var(--canvas); border: 1px solid var(--border); border-radius: 6px; padding: 12px;
+    margin-top: 10px; font-family: var(--mono); font-size: 12px; overflow-x: auto; white-space: pre-wrap;
+    display: none; max-height: 380px; overflow-y: auto; color: var(--text); line-height: 1.5;
   }
 </style>
 </head>
 <body>
-  <div class="topbar">
+  <div class="repo-header">
     <div>
-      <div class="eyebrow">DXC Client — Real Working Scenario</div>
-      <h1>Live QA Walkthrough</h1>
-      <p class="byline">Real pytest suite · real git commits · real AI calls — built by <b>Huseynbala Gurbanli</b></p>
+      <h1 class="repo-path"><b>buksai</b><span class="sep">/</span><b>AI-QA-POC</b><span class="sep">/</span>real-scenario</h1>
+      <p class="repo-meta">7 commits · real pytest suite · real git diffs · real AI calls · Huseynbala Gurbanli</p>
     </div>
-    <button class="reset" onclick="doStep('reset', this)">↺ Reset demo</button>
+    <button class="btn-reset" onclick="doStep('reset', this)">↺ git reset --hard</button>
   </div>
 
-  <div class="rail">
-    <div class="step idle" id="step-baseline">
-      <div class="step-marker">1</div>
-      <h3>Baseline suite</h3>
-      <p class="desc">Runs the real pytest suite against the live shop API. Should be green.</p>
-      <button class="step-btn" onclick="doStep('baseline', this)">Run baseline tests →</button>
-      <pre id="out-baseline"></pre>
+  <div class="commit-list">
+    <div class="commit-row idle" id="step-baseline">
+      <div class="commit-icon">1</div>
+      <div class="commit-body">
+        <p class="commit-title">Baseline suite</p>
+        <p class="commit-desc">Runs the real pytest suite against the live shop API. Should be green.</p>
+        <button class="btn-step" onclick="doStep('baseline', this)">Run baseline tests</button>
+        <pre id="out-baseline"></pre>
+      </div>
     </div>
 
-    <div class="step idle" id="step-gen_test">
-      <div class="step-marker">2</div>
-      <h3><span class="tag">UC3</span>AI generates a test from a captured request</h3>
-      <p class="desc">Reads a Fiddler-style capture, writes a real pytest file, then runs it.</p>
-      <button class="step-btn" onclick="doStep('gen_test', this)">Generate + run new test →</button>
-      <pre id="out-gen_test"></pre>
+    <div class="commit-row idle" id="step-gen_test">
+      <div class="commit-icon">2</div>
+      <div class="commit-body">
+        <p class="commit-title"><span class="use-case">UC3</span>AI generates a test from a captured request</p>
+        <p class="commit-desc">Reads a Fiddler-style capture, writes a real pytest file, then runs it.</p>
+        <button class="btn-step" onclick="doStep('gen_test', this)">Generate + run new test</button>
+        <pre id="out-gen_test"></pre>
+      </div>
     </div>
 
-    <div class="step idle" id="step-dev_change">
-      <div class="step-marker">3</div>
-      <h3>Developer refactors the API</h3>
-      <p class="desc">A real code change + real git commit — this is what will break the suite.</p>
-      <button class="step-btn" onclick="doStep('dev_change', this)">Apply dev change →</button>
-      <pre id="out-dev_change"></pre>
+    <div class="commit-row idle" id="step-dev_change">
+      <div class="commit-icon">3</div>
+      <div class="commit-body">
+        <p class="commit-title">Developer refactors the API</p>
+        <p class="commit-desc">A real code change + real git commit — this is what will break the suite.</p>
+        <button class="btn-step" onclick="doStep('dev_change', this)">Apply dev change</button>
+        <pre id="out-dev_change"></pre>
+      </div>
     </div>
 
-    <div class="step idle" id="step-impact">
-      <div class="step-marker">4</div>
-      <h3><span class="tag">UC2</span>AI predicts impact from the diff alone</h3>
-      <p class="desc">No test has run yet — this is a prediction from the code change alone.</p>
-      <button class="step-btn" onclick="doStep('impact', this)">Analyze impact →</button>
-      <pre id="out-impact"></pre>
+    <div class="commit-row idle" id="step-impact">
+      <div class="commit-icon">4</div>
+      <div class="commit-body">
+        <p class="commit-title"><span class="use-case">UC2</span>AI predicts impact from the diff alone</p>
+        <p class="commit-desc">No test has run yet — this is a prediction from the code change alone.</p>
+        <button class="btn-step" onclick="doStep('impact', this)">Analyze impact</button>
+        <pre id="out-impact"></pre>
+      </div>
     </div>
 
-    <div class="step idle" id="step-rerun">
-      <div class="step-marker">5</div>
-      <h3>Re-run the suite</h3>
-      <p class="desc">Confirms the prediction: real failures caused by the real change.</p>
-      <button class="step-btn" onclick="doStep('rerun', this)">Re-run tests →</button>
-      <pre id="out-rerun"></pre>
+    <div class="commit-row idle" id="step-rerun">
+      <div class="commit-icon">5</div>
+      <div class="commit-body">
+        <p class="commit-title">Re-run the suite</p>
+        <p class="commit-desc">Confirms the prediction: real failures caused by the real change.</p>
+        <button class="btn-step" onclick="doStep('rerun', this)">Re-run tests</button>
+        <pre id="out-rerun"></pre>
+      </div>
     </div>
 
-    <div class="step idle" id="step-ticket">
-      <div class="step-marker">6</div>
-      <h3><span class="tag">UC4</span>AI drafts a ticket from the failure</h3>
-      <p class="desc">Writes an actual ticket file from the real failure output.</p>
-      <button class="step-btn" onclick="doStep('ticket', this)">Draft ticket →</button>
-      <pre id="out-ticket"></pre>
+    <div class="commit-row idle" id="step-ticket">
+      <div class="commit-icon">6</div>
+      <div class="commit-body">
+        <p class="commit-title"><span class="use-case">UC4</span>AI drafts a ticket from the failure</p>
+        <p class="commit-desc">Writes an actual ticket file from the real failure output.</p>
+        <button class="btn-step" onclick="doStep('ticket', this)">Draft ticket</button>
+        <pre id="out-ticket"></pre>
+      </div>
     </div>
 
-    <div class="step idle" id="step-heal">
-      <div class="step-marker">7</div>
-      <h3><span class="tag">UC1</span>Self-healing: propose → apply → re-run</h3>
-      <p class="desc">AI proposes a fix, applies it, and re-runs until green.</p>
-      <button class="step-btn" onclick="doStep('heal', this)">Heal the suite →</button>
-      <pre id="out-heal"></pre>
+    <div class="commit-row idle" id="step-heal">
+      <div class="commit-icon">7</div>
+      <div class="commit-body">
+        <p class="commit-title"><span class="use-case">UC1</span>Self-healing: propose → apply → re-run</p>
+        <p class="commit-desc">AI proposes a fix, applies it, and re-runs until green.</p>
+        <button class="btn-step" onclick="doStep('heal', this)">Heal the suite</button>
+        <pre id="out-heal"></pre>
+      </div>
     </div>
   </div>
 
 <script>
 async function doStep(name, btn) {
-  const stepEl = document.getElementById('step-' + name);
+  const row = document.getElementById('step-' + name);
   const out = document.getElementById('out-' + name);
   btn.disabled = true;
-  if (stepEl) { stepEl.classList.remove('idle', 'done'); stepEl.classList.add('running'); }
+  if (row) { row.classList.remove('idle', 'done'); row.classList.add('running'); }
   out.style.display = 'block';
   out.textContent = 'Running...';
   try {
     const res = await fetch('/api/step/' + name, { method: 'POST' });
     const data = await res.json();
     out.textContent = data.output || '(no output)';
-    if (stepEl) { stepEl.classList.remove('running'); stepEl.classList.add('done'); }
+    if (row) { row.classList.remove('running'); row.classList.add('done'); }
   } catch (e) {
     out.textContent = 'Error: ' + e.message;
-    if (stepEl) { stepEl.classList.remove('running'); stepEl.classList.add('idle'); }
+    if (row) { row.classList.remove('running'); row.classList.add('idle'); }
   }
   btn.disabled = false;
 }

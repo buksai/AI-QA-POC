@@ -3,145 +3,164 @@
 <head>
 <meta charset="UTF-8">
 <title>AI in QA Automation — POC</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <style>
   :root {
-    --bg: #0b0e14;
-    --panel: #12161f;
-    --panel-raised: #171c27;
-    --border: #232838;
-    --text: #dce3ef;
-    --muted: #6b7686;
-    --green: #3ddc84;
-    --amber: #ffb454;
-    --red: #ff5f56;
-    --blue: #4f8cff;
-    --mono: 'IBM Plex Mono', monospace;
-    --sans: 'Inter', -apple-system, sans-serif;
+    --bg: #0d1117;
+    --canvas: #010409;
+    --panel: #161b22;
+    --border: #30363d;
+    --border-muted: #21262d;
+    --text: #c9d1d9;
+    --muted: #8b949e;
+    --link: #58a6ff;
+    --green: #3fb950;
+    --green-btn: #238636;
+    --green-btn-hover: #2ea043;
+    --red: #f85149;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
   }
   * { box-sizing: border-box; }
   body {
-    font-family: var(--sans);
-    max-width: 960px;
+    font-family: var(--font);
+    font-size: 14px;
+    max-width: 1012px;
     margin: 0 auto;
-    padding: 48px 24px 80px;
-    background: var(--bg);
+    padding: 24px 16px 64px;
+    background: var(--canvas);
     color: var(--text);
-    background-image:
-      linear-gradient(var(--border) 1px, transparent 1px),
-      linear-gradient(90deg, var(--border) 1px, transparent 1px);
-    background-size: 40px 40px;
-    background-attachment: fixed;
-    background-position: -1px -1px;
+    line-height: 1.5;
   }
-  .masthead { border-bottom: 1px solid var(--border); padding-bottom: 20px; margin-bottom: 28px; }
-  .eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--blue); margin-bottom: 10px; }
-  h1 { font-family: var(--mono); font-size: 24px; font-weight: 600; margin: 0 0 6px; letter-spacing: -0.01em; }
-  .byline { font-size: 13px; color: var(--muted); margin: 0; }
-  .byline b { color: var(--text); font-weight: 500; }
-  .guardrail { display: inline-flex; align-items: center; gap: 8px; background: var(--panel); border: 1px solid var(--border); border-radius: 20px; padding: 6px 14px 6px 10px; font-size: 12px; color: var(--muted); margin-top: 16px; }
-  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 6px var(--green); flex-shrink: 0; }
+  .repo-header { border-bottom: 1px solid var(--border-muted); padding-bottom: 16px; margin-bottom: 16px; }
+  .repo-path { font-size: 20px; color: var(--text); margin: 0 0 4px; font-weight: 400; }
+  .repo-path b { font-weight: 600; }
+  .repo-path .sep { color: var(--muted); font-weight: 300; margin: 0 2px; }
+  .repo-meta { font-size: 12px; color: var(--muted); margin: 0 0 12px; }
+  .repo-meta a { color: var(--link); text-decoration: none; }
 
-  .rack { display: flex; gap: 6px; margin-bottom: 24px; flex-wrap: wrap; }
-  .tabbtn { font-family: var(--mono); display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 6px; border: 1px solid var(--border); background: var(--panel); color: var(--muted); cursor: pointer; font-size: 12.5px; transition: all 0.15s; }
-  .tabbtn .led { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); }
-  .tabbtn.active { background: var(--panel-raised); border-color: var(--blue); color: var(--text); }
-  .tabbtn.active .led { background: var(--blue); box-shadow: 0 0 6px var(--blue); }
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted);
+    border: 1px solid var(--border); border-radius: 2em; padding: 3px 10px 3px 8px; background: var(--panel);
+  }
+  .badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+
+  .tabnav { display: flex; gap: 2px; border-bottom: 1px solid var(--border); margin: 20px 0 20px; }
+  .tabbtn {
+    font-family: var(--font); font-size: 14px; padding: 8px 16px; background: transparent;
+    border: none; border-bottom: 2px solid transparent; color: var(--muted); cursor: pointer;
+    display: flex; align-items: center; gap: 6px;
+  }
   .tabbtn:hover { color: var(--text); }
+  .tabbtn.active { color: var(--text); border-bottom-color: #f78166; font-weight: 600; }
+  .tabbtn .oct { width: 16px; height: 16px; flex-shrink: 0; }
 
   .panel { display: none; }
   .panel.active { display: block; }
-  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 20px; }
-  .card p.desc { font-size: 13px; color: var(--muted); margin: 0 0 12px; }
+  .box { background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: 16px; }
+  .box p.desc { font-size: 13px; color: var(--muted); margin: 0 0 12px; }
+  .box p.desc code { background: var(--border-muted); padding: 1px 5px; border-radius: 4px; font-family: var(--mono); font-size: 85%; }
+
   textarea {
-    width: 100%; box-sizing: border-box; font-family: var(--mono); font-size: 12.5px;
+    width: 100%; box-sizing: border-box; font-family: var(--mono); font-size: 12px;
     padding: 12px; border-radius: 6px; border: 1px solid var(--border);
-    background: var(--bg); color: var(--text); resize: vertical;
+    background: var(--canvas); color: var(--text); resize: vertical; line-height: 1.5;
   }
-  textarea:focus { outline: none; border-color: var(--blue); }
+  textarea:focus { outline: none; border-color: var(--link); box-shadow: 0 0 0 3px rgba(56,139,253,0.15); }
 
-  button.run {
-    margin-top: 12px; font-family: var(--mono); font-size: 12.5px; font-weight: 500;
-    padding: 9px 18px; border-radius: 6px; border: 1px solid var(--green);
-    background: rgba(61, 220, 132, 0.08); color: var(--green); cursor: pointer;
-    display: inline-flex; align-items: center; gap: 8px;
+  button.btn {
+    margin-top: 12px; font-family: var(--font); font-size: 14px; font-weight: 500;
+    padding: 5px 16px; border-radius: 6px; border: 1px solid rgba(240,246,252,0.1);
+    background: var(--green-btn); color: #fff; cursor: pointer;
   }
-  button.run:hover { background: rgba(61, 220, 132, 0.15); }
-  button.run:disabled { opacity: 0.4; cursor: not-allowed; }
-  button.run .arrow { transition: transform 0.15s; }
-  button.run:hover .arrow { transform: translateX(2px); }
+  button.btn:hover { background: var(--green-btn-hover); }
+  button.btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-  .status-line { display: flex; align-items: center; gap: 8px; margin-top: 14px; font-family: var(--mono); font-size: 11.5px; color: var(--muted); }
-  .status-led { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
-  .status-led.running { background: var(--amber); box-shadow: 0 0 8px var(--amber); animation: pulse 1s infinite; }
-  .status-led.done { background: var(--green); box-shadow: 0 0 8px var(--green); }
-  @keyframes pulse { 50% { opacity: 0.4; } }
+  .console-line { display: flex; align-items: center; gap: 6px; margin-top: 12px; font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  .spinner { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--border); border-top-color: var(--link); animation: spin 0.7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .check { color: var(--green); }
 
-  .result { margin-top: 14px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 16px 18px; font-size: 13.5px; line-height: 1.65; }
-  .result pre { background: var(--panel-raised); padding: 10px; border-radius: 6px; overflow-x: auto; border: 1px solid var(--border); }
-  .result code { font-family: var(--mono); font-size: 12.5px; }
-  .result h2, .result h3 { font-family: var(--mono); margin-top: 16px; margin-bottom: 6px; font-size: 14px; color: var(--blue); }
-  .result table { border-collapse: collapse; width: 100%; }
-  .result td, .result th { border: 1px solid var(--border); padding: 5px 9px; font-size: 12.5px; }
+  .result {
+    margin-top: 12px; background: var(--canvas); border: 1px solid var(--border); border-radius: 6px;
+    padding: 16px 20px; font-size: 13.5px; line-height: 1.6;
+  }
+  .result pre { background: var(--panel); padding: 12px; border-radius: 6px; overflow-x: auto; border: 1px solid var(--border); }
+  .result code { font-family: var(--mono); font-size: 85%; }
+  .result h2, .result h3 { margin-top: 20px; margin-bottom: 8px; font-size: 15px; font-weight: 600; border-bottom: 1px solid var(--border-muted); padding-bottom: 6px; }
+  .result table { border-collapse: collapse; width: 100%; margin: 8px 0; }
+  .result td, .result th { border: 1px solid var(--border); padding: 6px 10px; font-size: 12.5px; }
+  .result th { background: var(--panel); }
+  .result strong { color: var(--text); }
+  .footer-note { font-size: 11px; color: var(--muted); text-align: center; margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border-muted); }
 </style>
 </head>
 <body>
-  <div class="masthead">
-    <div class="eyebrow">DXC Client — QA Automation Prototype</div>
-    <h1>AI in QA Automation</h1>
-    <p class="byline">Proof of concept · built by <b>Huseynbala Gurbanli</b></p>
-    <div class="guardrail"><span class="dot"></span> Human-in-the-loop — AI proposes, engineers approve. Nothing merges automatically.</div>
+  <div class="repo-header">
+    <h1 class="repo-path"><b>buksai</b><span class="sep">/</span><b>AI-QA-POC</b></h1>
+    <p class="repo-meta">Proof of concept · <a href="#">DXC client QA process</a> · authored by Huseynbala Gurbanli</p>
+    <span class="badge"><span class="dot"></span>human-in-the-loop: AI proposes, engineers approve</span>
   </div>
 
-  <div class="rack">
-    <button class="tabbtn active" data-tab="heal"><span class="led"></span>01 · Self-healing test</button>
-    <button class="tabbtn" data-tab="impact"><span class="led"></span>02 · Impact analysis</button>
-    <button class="tabbtn" data-tab="api"><span class="led"></span>03 · API test generator</button>
-    <button class="tabbtn" data-tab="ticket"><span class="led"></span>04 · Auto ticket draft</button>
-  </div>
+  <nav class="tabnav">
+    <button class="tabbtn active" data-tab="heal">
+      <svg class="oct" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0a8 8 0 100 16A8 8 0 008 0zM7 11.5V10h2v1.5H7zm0-3V4h2v4.5H7z"></path></svg>
+      self-healing-test
+    </button>
+    <button class="tabbtn" data-tab="impact">
+      <svg class="oct" viewBox="0 0 16 16" fill="currentColor"><path d="M5 3.25a2.25 2.25 0 114.5 0v1.5A2.25 2.25 0 019.5 6.5v.5h1a2.25 2.25 0 012.25 2.25v1.086a2.25 2.25 0 11-1.5 0V9.25a.75.75 0 00-.75-.75h-5.5a.75.75 0 00-.75.75v.836a2.251 2.251 0 11-1.5 0V9.25A2.25 2.25 0 015 7h1v-.5a2.25 2.25 0 01-.25-4.483V3.25z"></path></svg>
+      impact-analysis
+    </button>
+    <button class="tabbtn" data-tab="api">
+      <svg class="oct" viewBox="0 0 16 16" fill="currentColor"><path d="M8.75 1.75a.75.75 0 00-1.5 0V5H4a.75.75 0 000 1.5h3.25v3.25a.75.75 0 001.5 0V6.5H12A.75.75 0 0012 5H8.75V1.75z"></path></svg>
+      api-test-generator
+    </button>
+    <button class="tabbtn" data-tab="ticket">
+      <svg class="oct" viewBox="0 0 16 16" fill="currentColor"><path d="M2 2.5A1.5 1.5 0 013.5 1h9A1.5 1.5 0 0114 2.5v11a1.5 1.5 0 01-1.5 1.5h-9A1.5 1.5 0 012 13.5v-11z"></path></svg>
+      auto-ticket-draft
+    </button>
+  </nav>
 
   <div id="panel-heal" class="panel active">
-    <div class="card">
-      <p class="desc">Paste a failing test error/log. AI diagnoses root cause and proposes a fix.</p>
+    <div class="box">
+      <p class="desc">Paste a failing test error/log below. AI reads <code>--tb=short</code> style output and proposes a fix.</p>
       <textarea id="heal-input" rows="5">AssertionError: Element not found: //button[@id='submit-btn-old']
 Test: test_checkout_submit
 Last passed: 3 days ago
 Recent commit: "renamed submit button id to submit-btn-v2 for A/B test"</textarea>
-      <br><button class="run" onclick="run('heal')">Analyze and propose fix <span class="arrow">→</span></button>
+      <br><button class="btn" onclick="run('heal')">Analyze and propose fix</button>
       <div id="status-heal"></div>
       <div id="heal-out"></div>
     </div>
   </div>
 
   <div id="panel-impact" class="panel">
-    <div class="card">
-      <p class="desc">Paste a PR/commit description. AI identifies which test scenarios are impacted and what updates they need.</p>
+    <div class="box">
+      <p class="desc">Paste a PR/commit description. AI identifies impacted test scenarios and the updates they need.</p>
       <textarea id="impact-input" rows="5">PR #482: Refactored checkout API response schema — added 'discountApplied' field,
 removed deprecated 'legacyTotal' field, changed 'status' enum values from
 [pending, complete] to [PENDING, COMPLETE, FAILED].
 Affected modules: checkout-service (backend), checkout-summary (frontend)</textarea>
-      <br><button class="run" onclick="run('impact')">Analyze impact on test suite <span class="arrow">→</span></button>
+      <br><button class="btn" onclick="run('impact')">Analyze impact on test suite</button>
       <div id="status-impact"></div>
       <div id="impact-out"></div>
     </div>
   </div>
 
   <div id="panel-api" class="panel">
-    <div class="card">
+    <div class="box">
       <p class="desc">Paste a captured API request/response (Fiddler-style). AI generates a test class.</p>
       <textarea id="api-input" rows="6">POST /api/v2/orders
 Request body: {"userId": 4821, "items": [{"sku":"A100","qty":2}], "coupon": null}
 Response 201: {"orderId":"ORD-99213","status":"created","total":59.98}</textarea>
-      <br><button class="run" onclick="run('api')">Generate test class <span class="arrow">→</span></button>
+      <br><button class="btn" onclick="run('api')">Generate test class</button>
       <div id="status-api"></div>
       <div id="api-out"></div>
     </div>
   </div>
 
   <div id="panel-ticket" class="panel">
-    <div class="card">
+    <div class="box">
       <p class="desc">Paste a test failure result. AI drafts a ready-to-file bug ticket.</p>
       <textarea id="ticket-input" rows="5">Test: test_login_with_valid_credentials
 Status: FAILED
@@ -149,11 +168,13 @@ Expected: redirect to /dashboard
 Actual: stayed on /login, error toast "Invalid session token"
 Environment: staging, Chrome 126
 Timestamp: 2026-07-15 09:12 UTC</textarea>
-      <br><button class="run" onclick="run('ticket')">Draft ticket <span class="arrow">→</span></button>
+      <br><button class="btn" onclick="run('ticket')">Draft ticket</button>
       <div id="status-ticket"></div>
       <div id="ticket-out"></div>
     </div>
   </div>
+
+  <p class="footer-note">buksai/AI-QA-POC · local prototype · port 5050</p>
 
 <script>
 document.querySelectorAll('.tabbtn').forEach(btn => {
@@ -166,15 +187,15 @@ document.querySelectorAll('.tabbtn').forEach(btn => {
 });
 
 const endpoints = { heal: '/api/heal', impact: '/api/impact', api: '/api/apitest', ticket: '/api/ticket' };
-const labels = { heal: 'ANALYZING FAILURE', impact: 'READING DIFF', api: 'GENERATING TEST CLASS', ticket: 'DRAFTING TICKET' };
+const labels = { heal: 'Analyzing failure…', impact: 'Reading diff…', api: 'Generating test class…', ticket: 'Drafting ticket…' };
 
 async function run(kind) {
-  const btn = event.target.closest('button');
+  const btn = event.target;
   const input = document.getElementById(kind + '-input').value;
   const status = document.getElementById('status-' + kind);
   const out = document.getElementById(kind + '-out');
   btn.disabled = true;
-  status.innerHTML = '<div class="status-line"><span class="status-led running"></span>' + labels[kind] + '...</div>';
+  status.innerHTML = '<div class="console-line"><span class="spinner"></span>' + labels[kind] + '</div>';
   out.innerHTML = '';
   try {
     const res = await fetch(endpoints[kind], {
@@ -183,13 +204,13 @@ async function run(kind) {
       body: JSON.stringify({ input })
     });
     const data = await res.json();
-    status.innerHTML = '<div class="status-line"><span class="status-led done"></span>COMPLETE</div>';
+    status.innerHTML = '<div class="console-line"><span class="check">✓</span>done</div>';
     out.innerHTML = '<div class="result"></div>';
     const box = out.querySelector('.result');
     if (window.marked) { box.innerHTML = marked.parse(data.result); }
     else { box.textContent = data.result; }
   } catch (e) {
-    status.innerHTML = '<div class="status-line" style="color:var(--red)"><span class="status-led" style="background:var(--red)"></span>ERROR</div>';
+    status.innerHTML = '<div class="console-line" style="color:var(--red)">✗ error</div>';
     out.innerHTML = '<p style="color:var(--red)">' + e.message + '</p>';
   }
   btn.disabled = false;
