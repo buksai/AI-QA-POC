@@ -3,11 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <title>AI in QA Automation - POC Demo</title>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <style>
-  body { font-family: -apple-system, Arial, sans-serif; max-width: 900px; margin: 40px auto; padding: 0 20px; background: #0d1117; color: #e6edf3; }
+  body { font-family: -apple-system, Arial, sans-serif; max-width: 940px; margin: 40px auto; padding: 0 20px; background: #0d1117; color: #e6edf3; }
   h1 { font-size: 22px; margin-bottom: 4px; }
-  p.sub { color: #8b949e; margin-top: 0; margin-bottom: 24px; }
-  .tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+  p.sub { color: #8b949e; margin-top: 0; margin-bottom: 8px; }
+  p.badge { display: inline-block; background: #1f2a37; border: 1px solid #30363d; color: #9fb4c7; font-size: 12px; padding: 4px 10px; border-radius: 20px; margin-bottom: 24px; }
+  .tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
   .tabbtn { padding: 8px 14px; border-radius: 6px; border: 1px solid #30363d; background: #161b22; color: #e6edf3; cursor: pointer; font-size: 14px; }
   .tabbtn.active { background: #21262d; border-color: #58a6ff; }
   .panel { display: none; }
@@ -15,28 +17,54 @@
   textarea { width: 100%; box-sizing: border-box; font-family: monospace; font-size: 13px; padding: 10px; border-radius: 6px; border: 1px solid #30363d; background: #0d1117; color: #e6edf3; }
   button.run { margin-top: 10px; padding: 8px 16px; border-radius: 6px; border: none; background: #238636; color: white; cursor: pointer; font-size: 14px; }
   button.run:hover { background: #2ea043; }
-  .result { margin-top: 16px; background: #161b22; border-radius: 6px; padding: 14px 16px; font-size: 14px; line-height: 1.6; white-space: pre-wrap; border: 1px solid #30363d; }
+  .result { margin-top: 16px; background: #161b22; border-radius: 6px; padding: 14px 16px; font-size: 14px; line-height: 1.6; border: 1px solid #30363d; }
+  .result pre { background: #0d1117; padding: 10px; border-radius: 6px; overflow-x: auto; border: 1px solid #30363d; }
+  .result code { font-family: monospace; font-size: 13px; }
+  .result h2, .result h3 { margin-top: 14px; margin-bottom: 6px; font-size: 16px; }
+  .result table { border-collapse: collapse; }
+  .result td, .result th { border: 1px solid #30363d; padding: 4px 8px; }
   .loading { color: #8b949e; font-size: 13px; }
 </style>
 </head>
 <body>
   <h1>AI in QA Automation — POC Demo</h1>
   <p class="sub">DXC client QA process | live prototype</p>
+  <p class="badge">Human-in-the-loop: AI proposes, engineers approve — nothing merges automatically</p>
 
   <div class="tabs">
     <button class="tabbtn active" data-tab="heal">1. Self-healing test</button>
-    <button class="tabbtn" data-tab="ticket">2. Auto ticket draft</button>
+    <button class="tabbtn" data-tab="impact">2. Impact analysis</button>
     <button class="tabbtn" data-tab="api">3. API test generator</button>
+    <button class="tabbtn" data-tab="ticket">4. Auto ticket draft</button>
   </div>
 
   <div id="panel-heal" class="panel active">
-    <p>Paste a failing test error/log. AI will diagnose it and propose a fix.</p>
+    <p>Paste a failing test error/log. AI diagnoses root cause and proposes a fix.</p>
     <textarea id="heal-input" rows="5">AssertionError: Element not found: //button[@id='submit-btn-old']
 Test: test_checkout_submit
 Last passed: 3 days ago
 Recent commit: "renamed submit button id to submit-btn-v2 for A/B test"</textarea>
     <br><button class="run" onclick="run('heal')">Analyze and propose fix</button>
     <div id="heal-out"></div>
+  </div>
+
+  <div id="panel-impact" class="panel">
+    <p>Paste a PR/commit description. AI identifies which test scenarios are impacted and what updates they need.</p>
+    <textarea id="impact-input" rows="5">PR #482: Refactored checkout API response schema — added 'discountApplied' field,
+removed deprecated 'legacyTotal' field, changed 'status' enum values from
+[pending, complete] to [PENDING, COMPLETE, FAILED].
+Affected modules: checkout-service (backend), checkout-summary (frontend)</textarea>
+    <br><button class="run" onclick="run('impact')">Analyze impact on test suite</button>
+    <div id="impact-out"></div>
+  </div>
+
+  <div id="panel-api" class="panel">
+    <p>Paste a captured API request/response (Fiddler-style). AI generates a test class.</p>
+    <textarea id="api-input" rows="6">POST /api/v2/orders
+Request body: {"userId": 4821, "items": [{"sku":"A100","qty":2}], "coupon": null}
+Response 201: {"orderId":"ORD-99213","status":"created","total":59.98}</textarea>
+    <br><button class="run" onclick="run('api')">Generate test class</button>
+    <div id="api-out"></div>
   </div>
 
   <div id="panel-ticket" class="panel">
@@ -51,15 +79,6 @@ Timestamp: 2026-07-15 09:12 UTC</textarea>
     <div id="ticket-out"></div>
   </div>
 
-  <div id="panel-api" class="panel">
-    <p>Paste a captured API request/response (like from Fiddler). AI generates a test class.</p>
-    <textarea id="api-input" rows="6">POST /api/v2/orders
-Request body: {"userId": 4821, "items": [{"sku":"A100","qty":2}], "coupon": null}
-Response 201: {"orderId":"ORD-99213","status":"created","total":59.98}</textarea>
-    <br><button class="run" onclick="run('api')">Generate test class</button>
-    <div id="api-out"></div>
-  </div>
-
 <script>
 document.querySelectorAll('.tabbtn').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -70,12 +89,12 @@ document.querySelectorAll('.tabbtn').forEach(btn => {
   });
 });
 
-const endpoints = { heal: '/api/heal', ticket: '/api/ticket', api: '/api/apitest' };
+const endpoints = { heal: '/api/heal', impact: '/api/impact', api: '/api/apitest', ticket: '/api/ticket' };
 
 async function run(kind) {
   const input = document.getElementById(kind + '-input').value;
   const out = document.getElementById(kind + '-out');
-  out.innerHTML = '<p class="loading">Thinking...</p>';
+  out.innerHTML = '<p class="loading">Analyzing...</p>';
   try {
     const res = await fetch(endpoints[kind], {
       method: 'POST',
@@ -84,7 +103,9 @@ async function run(kind) {
     });
     const data = await res.json();
     out.innerHTML = '<div class="result"></div>';
-    out.querySelector('.result').textContent = data.result;
+    const box = out.querySelector('.result');
+    if (window.marked) { box.innerHTML = marked.parse(data.result); }
+    else { box.textContent = data.result; }
   } catch (e) {
     out.innerHTML = '<p style="color:#f85149">Error: ' + e.message + '</p>';
   }

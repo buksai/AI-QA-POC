@@ -34,14 +34,16 @@ Root cause / Proposed fix / Confidence.
     return jsonify({"result": ask(prompt)})
 
 
-@app.route("/api/ticket", methods=["POST"])
-def ticket():
-    failure_result = request.json.get("input", "")
-    prompt = f"""You are an AI agent that drafts bug tickets from test failure data.
-Produce a ready-to-file ticket with: Title, Severity, Steps to reproduce,
-Expected, Actual, Environment.
+@app.route("/api/impact", methods=["POST"])
+def impact():
+    code_change = request.json.get("input", "")
+    prompt = f"""You are an AI QA assistant doing impact analysis for a code change.
+Given this PR/commit description, identify which categories of automated test
+scenarios are likely impacted and why, then propose what updates those test
+scenarios will need. Be concise: short bullet list of impacted areas with reasons,
+then a one-line priority recommendation.
 
-{failure_result}"""
+{code_change}"""
     return jsonify({"result": ask(prompt)})
 
 
@@ -54,6 +56,17 @@ pair, generate a concise Java RestAssured-style test class with request builder
 and key assertions.
 
 {captured_traffic}"""
+    return jsonify({"result": ask(prompt)})
+
+
+@app.route("/api/ticket", methods=["POST"])
+def ticket():
+    failure_result = request.json.get("input", "")
+    prompt = f"""You are an AI agent that drafts bug tickets from test failure data.
+Produce a ready-to-file ticket with: Title, Severity, Steps to reproduce,
+Expected, Actual, Environment.
+
+{failure_result}"""
     return jsonify({"result": ask(prompt)})
 
 
