@@ -13,6 +13,11 @@ public class TestRunner {
         List<Class<?>> scenarioClasses = new ArrayList<>();
         scenarioClasses.add(Class.forName("scenarios.CopperConcentrateTradeScenario"));
         scenarioClasses.add(Class.forName("scenarios.TitanReleaseScenario"));
+        scenarioClasses.add(Class.forName("scenarios.TradeScenario2"));
+        scenarioClasses.add(Class.forName("scenarios.TradeScenario3"));
+        scenarioClasses.add(Class.forName("scenarios.TradeScenario4"));
+        scenarioClasses.add(Class.forName("scenarios.TradeScenario5"));
+        scenarioClasses.add(Class.forName("scenarios.TradeScenario6"));
 
         int passed = 0;
         int failed = 0;
