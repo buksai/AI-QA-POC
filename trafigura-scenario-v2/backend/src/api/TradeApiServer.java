@@ -212,6 +212,7 @@ public class TradeApiServer {
     private static void respond(HttpExchange exchange, int status, String json) throws IOException {
         byte[] bytes = json.getBytes(StandardCharsets.UTF_8);
         exchange.getResponseHeaders().set("Content-Type", "application/json");
+        exchange.getResponseHeaders().set("Cache-Control", "no-store, no-cache, must-revalidate");
         exchange.sendResponseHeaders(status, bytes.length);
         try (OutputStream os = exchange.getResponseBody()) {
             os.write(bytes);
