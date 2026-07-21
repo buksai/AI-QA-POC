@@ -1,0 +1,16 @@
+=== Fiddler Session Capture (exported) ===
+Session #1
+------------------------------------------------------------
+POST https://trade-capture.internal/api/trades HTTP/1.1
+Host: trade-capture.internal
+Content-Type: application/json
+Content-Length: 74
+
+{"commodity":"Copper Concentrate","counterparty":"Southern Metals Corp"}
+
+------------------------------------------------------------
+HTTP/1.1 201 Created
+Content-Type: application/json
+
+{"tradeId":"TRD-00001","commodity":"Copper Concentrate","counterparty":"Southern Metals Corp","status":"DRAFT","totalQuantityTonnes":0.0,"tranches":[]}
+============================================================

@@ -87,6 +87,8 @@
   button .btn-icon { font-family: var(--mono); font-size: 13px; }
   #btn-run { background: linear-gradient(135deg, rgba(34,211,238,0.15), rgba(59,130,246,0.15)); border-color: var(--cyan); color: var(--cyan); font-weight: 600; }
   #btn-run:hover { background: linear-gradient(135deg, rgba(34,211,238,0.25), rgba(59,130,246,0.25)); }
+  .mission-btn { font-size: 12px; padding: 8px 12px; }
+  .mission-btn .btn-icon { color: var(--purple); }
   #btn-dev-change { color: var(--amber); }
   #btn-reset { color: var(--purple); }
 
@@ -196,14 +198,25 @@
           <div class="pipe-step" data-tool="read_file"><div class="pipe-icon">◇</div><div class="pipe-label">read_file</div><div class="pipe-count" id="pc-read_file"></div></div>
           <div class="pipe-step" data-tool="write_file"><div class="pipe-icon">✎</div><div class="pipe-label">write_file</div><div class="pipe-count" id="pc-write_file"></div></div>
           <div class="pipe-step" data-tool="draft_ticket"><div class="pipe-icon">⊹</div><div class="pipe-label">draft_ticket</div><div class="pipe-count" id="pc-draft_ticket"></div></div>
+          <div class="pipe-step" data-tool="read_fiddler_capture"><div class="pipe-icon">⚗</div><div class="pipe-label">read_fiddler_capture</div><div class="pipe-count" id="pc-read_fiddler_capture"></div></div>
           <div class="pipe-step" data-tool="migrate_wpf_action"><div class="pipe-icon">⇄</div><div class="pipe-label">migrate_wpf_action</div><div class="pipe-count" id="pc-migrate_wpf_action"></div></div>
         </div>
       </div>
 
       <div>
-        <div class="panel-title">Controls</div>
+        <div class="panel-title">Missions</div>
         <div class="controls">
-          <button id="btn-run"><span class="btn-icon">▶</span> Deploy autonomous agent</button>
+          <button id="btn-run"><span class="btn-icon">▶</span> Auto: investigate &amp; fix</button>
+          <button class="mission-btn" data-mission="heal"><span class="btn-icon">⚕</span> UC1 · Self-heal the suite</button>
+          <button class="mission-btn" data-mission="maintain"><span class="btn-icon">⌖</span> UC2 · Impact analysis</button>
+          <button class="mission-btn" data-mission="apitest"><span class="btn-icon">⚗</span> UC3 · Gen test from Fiddler</button>
+          <button class="mission-btn" data-mission="ticket"><span class="btn-icon">⊹</span> UC4 · Triage &amp; file issue</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="panel-title">Environment</div>
+        <div class="controls">
           <button id="btn-dev-change"><span class="btn-icon">⚡</span> Inject dev change (live toggle)</button>
           <button id="btn-reset"><span class="btn-icon">↺</span> Reset workspace</button>
         </div>
@@ -413,8 +426,17 @@ document.getElementById("btn-dev-change").onclick = async (e) => {
   e.target.disabled = false;
 };
 
-document.getElementById("btn-run").onclick = () => {
+const MISSION_TASKS = {
+  auto: "Investigate the current state of the regression suite and fix anything that needs fixing. Report your findings and actions when done.",
+  heal: "The regression suite may be failing. Diagnose the cause, and if it's a stale baseline from a legitimate business-config change, self-heal the affected scenario files and confirm the suite is green. Report what you did.",
+  maintain: "A business-logic configuration may have changed on the backend. Perform impact analysis: determine what changed, identify which regression scenarios are affected and why, and describe the updates each needs. You may apply the fixes. Report your analysis.",
+  apitest: "Generate a new automated API test action class from the captured Fiddler session in captures/create_order.saz.txt. Read the capture, derive a runnable test for the trade-creation endpoint that matches the existing scenario style, and write it into the tests as a new file. Report what you generated.",
+  ticket: "Run the regression suite. If there are failures, triage each one: decide whether it is a genuine product defect or routine baseline drift from a config change. For anything that looks like a real defect, draft a bug ticket. Explain your triage reasoning.",
+};
+
+function runAgent(task) {
   const btn = document.getElementById("btn-run");
+  document.querySelectorAll(".mission-btn").forEach(b => b.disabled = true);
   btn.disabled = true;
   streamEl.innerHTML = "";
   resetTelemetry();
@@ -423,7 +445,7 @@ document.getElementById("btn-run").onclick = () => {
   liveEl.classList.add("on");
   startTimer();
 
-  const source = new EventSource("/api/run-agent");
+  const source = new EventSource("/api/run-agent?task=" + encodeURIComponent(task));
   source.onmessage = (event) => {
     const { kind, data } = JSON.parse(event.data);
     if (kind === "start") {
@@ -456,6 +478,7 @@ document.getElementById("btn-run").onclick = () => {
     if (!stateEl.classList.contains("done")) setState("idle", "idle");
     source.close();
     btn.disabled = false;
+    document.querySelectorAll(".mission-btn").forEach(b => b.disabled = false);
     refreshBackendStatus();
   });
   source.onerror = () => {
@@ -464,8 +487,14 @@ document.getElementById("btn-run").onclick = () => {
     liveEl.classList.remove("on");
     source.close();
     btn.disabled = false;
+    document.querySelectorAll(".mission-btn").forEach(b => b.disabled = false);
   };
-};
+}
+
+document.getElementById("btn-run").onclick = () => runAgent(MISSION_TASKS.auto);
+document.querySelectorAll(".mission-btn").forEach(b => {
+  b.onclick = () => runAgent(MISSION_TASKS[b.dataset.mission]);
+});
 </script>
 </body>
 </html>

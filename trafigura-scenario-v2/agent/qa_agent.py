@@ -96,6 +96,17 @@ def tool_draft_ticket(args):
     return {"ticket_written": name}
 
 
+def tool_read_fiddler_capture(args):
+    path = args.get("path", "captures/create_order.saz.txt")
+    full = os.path.join(WORKSPACE, path)
+    if not os.path.abspath(full).startswith(os.path.abspath(WORKSPACE)):
+        return {"error": "path outside workspace"}
+    if not os.path.exists(full):
+        return {"error": f"capture not found: {path}"}
+    with open(full) as f:
+        return {"capture": f.read()}
+
+
 def tool_migrate_wpf_action(args):
     path = args.get("path", "legacy_wpf_actions/ConfirmTradeAction.cs")
     full = os.path.join(WORKSPACE, path)
@@ -147,6 +158,14 @@ TOOLS = [
         },
     },
     {
+        "name": "read_fiddler_capture",
+        "description": "Read a captured Fiddler HTTP session (request/response pairs recorded from the trade capture API). Use this when you want to generate a new automated API test action class from real captured traffic - read the capture, then write the generated test with write_file. Default path 'captures/create_order.saz.txt'.",
+        "input_schema": {
+            "type": "object",
+            "properties": {"path": {"type": "string"}},
+        },
+    },
+    {
         "name": "migrate_wpf_action",
         "description": "Read a legacy WPF C# UI action so you can produce its Playwright TypeScript equivalent for the web migration. Only call this if specifically relevant to your task.",
         "input_schema": {
@@ -163,6 +182,7 @@ DISPATCH = {
     "read_file": tool_read_file,
     "write_file": tool_write_file,
     "draft_ticket": tool_draft_ticket,
+    "read_fiddler_capture": tool_read_fiddler_capture,
     "migrate_wpf_action": tool_migrate_wpf_action,
 }
 
@@ -180,11 +200,23 @@ A reasonable investigation usually checks the suite's health and the backend's \
 current configuration, but you are not required to follow any fixed sequence — \
 use your judgment.
 
-If you find failures caused by a legitimate change in business configuration (a \
-stale baseline), propose the corrected scenario file and write it directly with \
-write_file, then re-check the suite to confirm it's green. If a failure looks like \
-a genuine defect rather than routine baseline drift, draft a ticket instead of \
-silently patching over it — explain your reasoning for the distinction.
+Your capabilities span four areas, and which one applies depends on the task \
+you're given:
+  1. Self-healing: when the suite fails due to a legitimate business-config \
+     change (a stale baseline), propose the corrected scenario file, write it \
+     with write_file, and re-check until green.
+  2. Smart maintenance: when business logic changes, identify which scenarios \
+     are impacted (check_backend_config + read the scenario files) and what \
+     updates they need.
+  3. API test generation: when asked, read a Fiddler capture with \
+     read_fiddler_capture and generate a new automated test action class from \
+     the real request/response traffic, writing it with write_file.
+  4. Issue creation: if a failure looks like a genuine defect rather than \
+     routine baseline drift, draft a ticket with draft_ticket instead of \
+     silently patching over it — explain your reasoning for the distinction.
+
+Use judgment about which capability the task calls for and how to sequence \
+your tools — you are not following a fixed script.
 
 Work autonomously through as many tool calls as you need. When you are done, \
 respond with a final plain-text summary (no more tool calls) describing what you \
