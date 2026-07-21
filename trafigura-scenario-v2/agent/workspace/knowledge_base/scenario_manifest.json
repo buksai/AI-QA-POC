@@ -1,0 +1,276 @@
+{
+  "scenarios": [
+    {
+      "id": "CopperConcentrateTradeScenario.testCreateAndValueCopperConcentrateTrade",
+      "category": "fee_drift",
+      "linked_pattern": "PATTERN-003"
+    },
+    {
+      "id": "CopperConcentrateTradeScenario.testAmendTradeQuantityAndRevalue",
+      "category": "fee_drift",
+      "linked_pattern": "PATTERN-003"
+    },
+    {
+      "id": "CopperConcentrateTradeScenario.testMultiTrancheTradeQuantity",
+      "category": "healthy",
+      "linked_pattern": null
+    },
+    {
+      "id": "TitanReleaseScenario.testCopperTradeWithPricingDate",
+      "category": "pricing_date",
+      "linked_pattern": "PATTERN-001"
+    },
+    {
+      "id": "TitanReleaseScenario.testTradeApprovalFlow",
+      "category": "fee_drift",
+      "linked_pattern": "PATTERN-003"
+    },
+    {
+      "id": "TradeScenario2.testScenario2TradeLifecycle",
+      "category": "pricing_date",
+      "linked_pattern": "PATTERN-001"
+    },
+    {
+      "id": "TradeScenario3.testScenario3TradeLifecycle",
+      "category": "pricing_date",
+      "linked_pattern": "PATTERN-001"
+    },
+    {
+      "id": "TradeScenario4.testScenario4TradeLifecycle",
+      "category": "pricing_date",
+      "linked_pattern": "PATTERN-001"
+    },
+    {
+      "id": "TradeScenario5.testScenario5TradeLifecycle",
+      "category": "pricing_date",
+      "linked_pattern": "PATTERN-001"
+    },
+    {
+      "id": "TradeScenario6.testScenario6TradeLifecycle",
+      "category": "pricing_date",
+      "linked_pattern": "PATTERN-001"
+    },
+    {
+      "id": "TradeScenario7.testScenario7TradeLifecycle",
+      "category": "pricing_date",
+      "linked_pattern": "PATTERN-001"
+    },
+    {
+      "id": "TradeScenario8.testScenario8TradeLifecycle",
+      "category": "pricing_date",
+      "linked_pattern": "PATTERN-001"
+    },
+    {
+      "id": "TradeScenario9.testScenario9TradeLifecycle",
+      "category": "pricing_date",
+      "linked_pattern": "PATTERN-001"
+    },
+    {
+      "id": "TradeScenario10.testScenario10TradeLifecycle",
+      "category": "pricing_date",
+      "linked_pattern": "PATTERN-001"
+    },
+    {
+      "id": "TradeScenario11.testScenario11TradeLifecycle",
+      "category": "pricing_date",
+      "linked_pattern": "PATTERN-001"
+    },
+    {
+      "id": "TradeScenario12.testScenario12TradeLifecycle",
+      "category": "pricing_date",
+      "linked_pattern": "PATTERN-001"
+    },
+    {
+      "id": "TradeScenario13.testScenario13TradeLifecycle",
+      "category": "pricing_date",
+      "linked_pattern": "PATTERN-001"
+    },
+    {
+      "id": "TradeScenario14.testScenario14TradeLifecycle",
+      "category": "pricing_date",
+      "linked_pattern": "PATTERN-001"
+    },
+    {
+      "id": "TradeScenario15.testScenario15TradeLifecycle",
+      "category": "pricing_date",
+      "linked_pattern": "PATTERN-001"
+    },
+    {
+      "id": "TradeScenario16.testScenario16TradeLifecycle",
+      "category": "pricing_date",
+      "linked_pattern": "PATTERN-001"
+    },
+    {
+      "id": "TradeScenario17.testScenario17TradeLifecycle",
+      "category": "pricing_date",
+      "linked_pattern": "PATTERN-001"
+    },
+    {
+      "id": "TradeScenario18.testScenario18TradeLifecycle",
+      "category": "pricing_date",
+      "linked_pattern": "PATTERN-001"
+    },
+    {
+      "id": "TradeScenario19.testScenario19TradeLifecycle",
+      "category": "pricing_date",
+      "linked_pattern": "PATTERN-001"
+    },
+    {
+      "id": "TradeScenario20.testScenario20TradeLifecycle",
+      "category": "pricing_date",
+      "linked_pattern": "PATTERN-001"
+    },
+    {
+      "id": "TradeScenario21.testScenario21TradeLifecycle",
+      "category": "pricing_date",
+      "linked_pattern": "PATTERN-001"
+    },
+    {
+      "id": "TradeScenario22.testScenario22TradeLifecycle",
+      "category": "pricing_date",
+      "linked_pattern": "PATTERN-001"
+    },
+    {
+      "id": "TradeScenario23.testScenario23TradeLifecycle",
+      "category": "pricing_date",
+      "linked_pattern": "PATTERN-001"
+    },
+    {
+      "id": "TradeScenario24.testScenario24TradeLifecycle",
+      "category": "pricing_date",
+      "linked_pattern": "PATTERN-001"
+    },
+    {
+      "id": "TradeScenario25.testScenario25TradeLifecycle",
+      "category": "pricing_date",
+      "linked_pattern": "PATTERN-001"
+    },
+    {
+      "id": "TradeScenario26.testScenario26TradeLifecycle",
+      "category": "pricing_date",
+      "linked_pattern": "PATTERN-001"
+    },
+    {
+      "id": "TradeScenario27.testScenario27TradeLifecycle",
+      "category": "pricing_date",
+      "linked_pattern": "PATTERN-001"
+    },
+    {
+      "id": "TradeScenario28.testScenario28TradeLifecycle",
+      "category": "pricing_date",
+      "linked_pattern": "PATTERN-001"
+    },
+    {
+      "id": "TradeScenario29.testScenario29TradeLifecycle",
+      "category": "pricing_date",
+      "linked_pattern": "PATTERN-001"
+    },
+    {
+      "id": "TradeScenario30.testScenario30TradeLifecycle",
+      "category": "pricing_date",
+      "linked_pattern": "PATTERN-001"
+    },
+    {
+      "id": "TradeScenario31.testScenario31TradeLifecycle",
+      "category": "pricing_date",
+      "linked_pattern": "PATTERN-001"
+    },
+    {
+      "id": "TradeScenario32.testScenario32TradeLifecycle",
+      "category": "pricing_date",
+      "linked_pattern": "PATTERN-001"
+    },
+    {
+      "id": "TradeScenario33.testScenario33TradeLifecycle",
+      "category": "pricing_date",
+      "linked_pattern": "PATTERN-001"
+    },
+    {
+      "id": "TradeScenario34.testScenario34TradeLifecycle",
+      "category": "pricing_date",
+      "linked_pattern": "PATTERN-001"
+    },
+    {
+      "id": "TradeScenario35.testScenario35TradeLifecycle",
+      "category": "pricing_date",
+      "linked_pattern": "PATTERN-001"
+    },
+    {
+      "id": "TradeScenario36.testScenario36TradeLifecycle",
+      "category": "pricing_date",
+      "linked_pattern": "PATTERN-001"
+    },
+    {
+      "id": "TradeScenario37.testScenario37TradeLifecycle",
+      "category": "pricing_date",
+      "linked_pattern": "PATTERN-001"
+    },
+    {
+      "id": "TradeScenario38.testScenario38TradeLifecycle",
+      "category": "pricing_date",
+      "linked_pattern": "PATTERN-001"
+    },
+    {
+      "id": "TradeScenario39.testScenario39FeeSensitiveValuation",
+      "category": "fee_drift",
+      "linked_pattern": "PATTERN-003"
+    },
+    {
+      "id": "TradeScenario40.testScenario40FeeSensitiveValuation",
+      "category": "fee_drift",
+      "linked_pattern": "PATTERN-003"
+    },
+    {
+      "id": "TradeScenario41.testScenario41FeeSensitiveValuation",
+      "category": "fee_drift",
+      "linked_pattern": "PATTERN-003"
+    },
+    {
+      "id": "TradeScenario42.testScenario42FeeSensitiveValuation",
+      "category": "fee_drift",
+      "linked_pattern": "PATTERN-003"
+    },
+    {
+      "id": "TradeScenario43.testScenario43FeeSensitiveValuation",
+      "category": "fee_drift",
+      "linked_pattern": "PATTERN-003"
+    },
+    {
+      "id": "TradeScenario44.testLargeTradeVolumeDiscount",
+      "category": "genuine_defect",
+      "linked_pattern": null,
+      "linked_requirement": "REQ-114"
+    },
+    {
+      "id": "TradeScenario45.testLargeTradeVolumeDiscountVariant",
+      "category": "genuine_defect",
+      "linked_pattern": null,
+      "linked_requirement": "REQ-114"
+    },
+    {
+      "id": "TradeScenario46.testScenario46QuantityOnly",
+      "category": "healthy",
+      "linked_pattern": null
+    },
+    {
+      "id": "TradeScenario47.testScenario47QuantityOnly",
+      "category": "healthy",
+      "linked_pattern": null
+    },
+    {
+      "id": "TradeScenario48.testScenario48QuantityOnly",
+      "category": "healthy",
+      "linked_pattern": null
+    },
+    {
+      "id": "TradeScenario49.testScenario49QuantityOnly",
+      "category": "healthy",
+      "linked_pattern": null
+    },
+    {
+      "id": "TradeScenario50.testScenario50QuantityOnly",
+      "category": "healthy",
+      "linked_pattern": null
+    }
+  ]
+}

@@ -19,10 +19,23 @@ public class BackendClient {
     private static final String BASE = "http://127.0.0.1:5100/api";
     private final HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(3)).build();
 
+    // Thread-safe registry of every trade ID this process has created, for
+    // concurrency proof: verifying zero ID collisions across genuinely
+    // concurrent scenario execution, checked against the SAME running
+    // backend process (not a fresh restart).
+    private static final java.util.concurrent.ConcurrentLinkedQueue<String> createdTradeIds =
+            new java.util.concurrent.ConcurrentLinkedQueue<>();
+
+    public static java.util.List<String> getCreatedTradeIds() {
+        return new java.util.ArrayList<>(createdTradeIds);
+    }
+
     public String createTrade(String commodity, String counterparty) {
         String body = "{\"commodity\":\"" + commodity + "\",\"counterparty\":\"" + counterparty + "\"}";
         String resp = post(BASE + "/trades", body);
-        return extract(resp, "tradeId");
+        String tradeId = extract(resp, "tradeId");
+        createdTradeIds.add(tradeId);
+        return tradeId;
     }
 
     public void addTranche(String tradeId, String month, double qty, String origin, String dest) {

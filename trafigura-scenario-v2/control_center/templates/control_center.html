@@ -51,6 +51,13 @@
   .fix-panel-body { font-family: "SF Mono", Consolas, monospace; font-size: 12.5px; line-height: 1.6; padding: 12px 14px; white-space: pre-wrap; max-height: 260px; overflow-y: auto; }
   .fix-panel-body .diff-add { color: #1a7f37; background: #e6ffec; display: block; }
   .fix-panel-body .diff-del { color: #b31d28; background: #ffebe9; display: block; }
+
+  .evidence-panel { border: 1px solid #ccc; border-radius: 6px; margin-bottom: 14px; overflow: hidden; }
+  .evidence-title { background: #333; color: #fff; font-size: 12px; font-weight: 600; padding: 6px 12px; }
+  .evidence-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1px; background: #ddd; }
+  .evidence-cell { background: #fff; padding: 10px 12px; }
+  .evidence-cell .val { font-size: 18px; font-weight: 700; font-family: "SF Mono", Consolas, monospace; }
+  .evidence-cell .lbl { font-size: 10.5px; color: #777; margin-top: 2px; }
   .fix-panel-body .diff-hunk { color: #8250df; }
   .fix-panel-body .diff-file { color: #57606a; font-weight: 600; }
 </style>
@@ -72,6 +79,10 @@
       <button class="primary" id="btn-run">Run agent</button>
       <button id="btn-dev-change">Break the suite (inject change)</button>
       <button id="btn-reset">Reset</button>
+    </div>
+    <div class="evidence-panel" id="evidence-panel" style="display:none;">
+      <div class="evidence-title">Evidence Summary</div>
+      <div class="evidence-grid" id="evidence-grid"></div>
     </div>
     <div class="fix-panel" id="fix-panel" style="display:none;">
       <div class="fix-panel-title">Proposed code fix</div>
@@ -130,6 +141,41 @@ function logBlock(text) {
 
 const fixPanel = document.getElementById("fix-panel");
 const fixPanelBody = document.getElementById("fix-panel-body");
+
+const evidencePanel = document.getElementById("evidence-panel");
+const evidenceGrid = document.getElementById("evidence-grid");
+const evidenceData = {};
+const EVIDENCE_KEYS = [
+  ["total_scenarios", "scenarios"],
+  ["configured_workers", "workers configured"],
+  ["peak_active_workers", "peak concurrent"],
+  ["unique_trade_ids_created", "unique trade IDs"],
+  ["id_collisions", "ID collisions"],
+  ["duration_ms", "duration (ms)"],
+];
+function updateEvidenceFromText(text) {
+  let found = false;
+  for (const [key, label] of EVIDENCE_KEYS) {
+    const m = text.match(new RegExp(key + "=(-?\\d+)"));
+    if (m) { evidenceData[key] = m[1]; found = true; }
+  }
+  const passFail = text.match(/(\d+) passed, (\d+) failed/);
+  if (passFail) { evidenceData["passed"] = passFail[1]; evidenceData["failed"] = passFail[2]; found = true; }
+  if (found) renderEvidencePanel();
+}
+function renderEvidencePanel() {
+  evidencePanel.style.display = "block";
+  const cells = [];
+  for (const [key, label] of EVIDENCE_KEYS) {
+    if (evidenceData[key] !== undefined) cells.push([label, evidenceData[key]]);
+  }
+  if (evidenceData["passed"] !== undefined) cells.push(["passed", evidenceData["passed"]]);
+  if (evidenceData["failed"] !== undefined) cells.push(["failed", evidenceData["failed"]]);
+  evidenceGrid.innerHTML = cells.map(([label, val]) =>
+    `<div class="evidence-cell"><div class="val">${val}</div><div class="lbl">${label}</div></div>`
+  ).join("");
+}
+
 function showFixPanel(result) {
   fixPanel.style.display = "block";
   const header = `${result.total_fixed} file(s) fixed: ${(result.files_fixed || []).join(", ")}\npattern: ${result.pattern_applied || ""}\n\n`;
@@ -171,6 +217,8 @@ document.getElementById("btn-run").onclick = () => {
   logEl.innerHTML = "";
   fixPanel.style.display = "none";
   fixPanelBody.innerHTML = "";
+  evidencePanel.style.display = "none";
+  for (const k of Object.keys(evidenceData)) delete evidenceData[k];
   logLine("Running agent...", "line-tool");
 
   const source = new EventSource("/api/run-agent");
@@ -194,6 +242,16 @@ document.getElementById("btn-run").onclick = () => {
         out = data.result.output;
       } else {
         out = JSON.stringify(data.result);
+      }
+      updateEvidenceFromText(out);
+      if (data.result && data.result.by_category) {
+        for (const [cat, counts] of Object.entries(data.result.by_category)) {
+          evidenceData[cat] = `${counts.passed}/${counts.total}`;
+        }
+        EVIDENCE_KEYS.push(...Object.keys(data.result.by_category)
+          .filter(cat => !EVIDENCE_KEYS.some(([k]) => k === cat))
+          .map(cat => [cat, cat.replace(/_/g, " ")]));
+        renderEvidencePanel();
       }
       logBlock(out.slice(0, 2000));
     } else if (kind === "final") {

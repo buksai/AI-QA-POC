@@ -235,6 +235,75 @@ def tool_read_requirements(_args):
         return _json.load(f)
 
 
+def tool_get_scenario_inventory(_args):
+    """Cross-references the last suite run's PASSED/FAILED lines against the
+    scenario manifest to produce reconciled counts by category - answers
+    exactly how many scenarios in each category (pricing_date, fee_drift,
+    healthy, genuine_defect) passed vs failed, so totals are never left
+    ambiguous or unreconciled."""
+    import json as _json
+    import re as _re
+
+    manifest_path = os.path.join(WORKSPACE, "knowledge_base", "scenario_manifest.json")
+    if not os.path.exists(manifest_path):
+        return {"error": "scenario manifest not found"}
+    with open(manifest_path) as f:
+        manifest = _json.load(f)
+    category_by_id = {s["id"]: s["category"] for s in manifest["scenarios"]}
+
+    suite_result = tool_check_suite({})
+    output = suite_result.get("output", "")
+
+    status_by_id = {}
+    for line in output.split("\n"):
+        m = _re.match(r"(PASSED|FAILED)\s+\[[\w-]+\]\s+([\w.]+)", line)
+        if m:
+            status_by_id[m.group(2)] = m.group(1)
+
+    from collections import defaultdict
+    breakdown = defaultdict(lambda: {"passed": 0, "failed": 0, "total": 0})
+    unreconciled = []
+    for scenario_id, status in status_by_id.items():
+        cat = category_by_id.get(scenario_id)
+        if cat is None:
+            unreconciled.append(scenario_id)
+            continue
+        breakdown[cat]["total"] += 1
+        breakdown[cat]["passed" if status == "PASSED" else "failed"] += 1
+
+    return {
+        "total_scenarios_run": len(status_by_id),
+        "total_in_manifest": len(category_by_id),
+        "by_category": dict(breakdown),
+        "unreconciled_scenario_ids": unreconciled,
+        "raw_suite_output": output
+    }
+
+
+def tool_get_app_diff(args):
+    """Read the REAL git diff of the most recent commit that touched a given
+    application source file - safe, read-only (git diff/log only, never
+    reset/checkout). Use this for genuine smart maintenance: read what
+    actually changed in the application code, then reason about which
+    scenarios are impacted and why, by reading their source with read_file -
+    don't just apply a pre-canned pattern."""
+    path = args.get("path", "backend/src/system/JupiterValuationClient.java")
+    repo_root = _run(["git", "rev-parse", "--show-toplevel"])[0].strip()
+    # Find the most recent commit touching this path
+    commit_out, rc = _run(["git", "log", "-1", "--format=%H", "--", path], cwd=repo_root)
+    commit = commit_out.strip()
+    if not commit:
+        return {"error": f"no commit history found for path: {path}"}
+    diff_out, _ = _run(["git", "diff", commit + "~1", commit, "--", path], cwd=repo_root)
+    message_out, _ = _run(["git", "log", "-1", "--format=%s%n%b", commit], cwd=repo_root)
+    return {
+        "path": path,
+        "commit": commit,
+        "commit_message": message_out.strip(),
+        "diff": diff_out[:6000]
+    }
+
+
 def tool_read_knowledge_base(_args):
     import json as _json
     path = os.path.join(WORKSPACE, "knowledge_base", "fix_patterns.json")
@@ -332,6 +401,19 @@ TOOLS = [
         "input_schema": {"type": "object", "properties": {}},
     },
     {
+        "name": "get_scenario_inventory",
+        "description": "Get a reconciled inventory of the last suite run, cross-referenced against the scenario manifest: exact pass/fail counts broken down by category (pricing_date, fee_drift, healthy, genuine_defect). Use this instead of manually counting from raw suite output - it eliminates ambiguity about which numbers belong to which category.",
+        "input_schema": {"type": "object", "properties": {}},
+    },
+    {
+        "name": "get_app_diff",
+        "description": "Read the REAL git diff of the most recent commit that changed a given application source file (safe, read-only). Use this for genuine smart maintenance: understand what actually changed in the application, then use list_scenario_files and read_file to reason about which scenarios are impacted and why - do not just apply a pre-canned pattern. Default path is backend/src/system/JupiterValuationClient.java.",
+        "input_schema": {
+            "type": "object",
+            "properties": {"path": {"type": "string", "description": "relative path from repo root, e.g. trafigura-scenario-v2/backend/src/system/JupiterValuationClient.java"}}
+        },
+    },
+    {
         "name": "read_knowledge_base",
         "description": "Read the team's shared knowledge base of known fix patterns. Each pattern has a trigger (error signature from logs), root cause, and fix. Multiple engineers contribute patterns here — Wagner, Vera, and others. Call this when you see a failure to check if it matches a known pattern before attempting to reason from scratch.",
         "input_schema": {"type": "object", "properties": {}},
@@ -362,6 +444,8 @@ DISPATCH = {
     "write_file": tool_write_file,
     "draft_ticket": tool_draft_ticket,
     "read_requirements": tool_read_requirements,
+    "get_scenario_inventory": tool_get_scenario_inventory,
+    "get_app_diff": tool_get_app_diff,
     "recompute_valuation_baselines": tool_recompute_valuation_baselines,
     "scan_and_fix_pattern": tool_scan_and_fix_pattern,
     "read_knowledge_base": tool_read_knowledge_base,
@@ -423,6 +507,20 @@ represents it, (3) the backend violates it, and (4) no known fix pattern \
 explains the mismatch. Never leave a remaining failure unexplained in your \
 final report — every failure must end up fixed, ticketed as a defect (with \
 requirement citation), or flagged as an unsupported expectation.
+
+Additional tools for rigor:
+- get_scenario_inventory: use this instead of manually counting from raw \
+  suite output — it cross-references results against the scenario manifest \
+  and gives exact reconciled pass/fail counts per category, so your report \
+  never has ambiguous or unreconciled totals.
+- recompute_valuation_baselines: for fee-type changes affecting many files \
+  with different quantities, use this instead of scan_and_fix_pattern — it \
+  recalculates each file's own baseline individually by a multiplier, \
+  rather than a blind find/replace of one literal value.
+- get_app_diff: for genuine smart maintenance, read the REAL git diff of a \
+  changed application file, then reason yourself (via list_scenario_files \
+  and read_file) about which scenarios are impacted and why — don't rely \
+  only on a pre-built pattern; show your own analysis of the diff.
 
 Use judgment about which capability the task calls for and how to sequence \
 your tools — you are not following a fixed script.
