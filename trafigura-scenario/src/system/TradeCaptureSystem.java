@@ -22,6 +22,18 @@ public class TradeCaptureSystem {
         t.setStatus(Trade.Status.CONFIRMED);
     }
 
+    public void amendTrancheQuantity(String tradeId, int trancheIndex, double newQuantityTonnes) {
+        Trade t = trades.get(tradeId);
+        if (t == null) throw new IllegalArgumentException("Trade not found: " + tradeId);
+        if (t.getStatus() == Trade.Status.SETTLED) {
+            throw new IllegalStateException("Cannot amend a settled trade: " + tradeId);
+        }
+        if (trancheIndex < 0 || trancheIndex >= t.getTranches().size()) {
+            throw new IndexOutOfBoundsException("Tranche index out of range: " + trancheIndex);
+        }
+        t.getTranches().get(trancheIndex).setQuantityTonnes(newQuantityTonnes);
+    }
+
     public TradeValuation getValuation(String tradeId) {
         Trade t = trades.get(tradeId);
         if (t == null) throw new IllegalArgumentException("Trade not found: " + tradeId);

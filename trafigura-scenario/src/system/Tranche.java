@@ -3,7 +3,7 @@ package system;
 /** A shipment tranche of a trade (e.g. one vessel load within a year-long delivery schedule). */
 public class Tranche {
     private final String shipmentMonth;
-    private final double quantityTonnes;
+    private double quantityTonnes;
     private final String originPort;
     private final String destinationPort;
 
@@ -16,6 +16,7 @@ public class Tranche {
 
     public String getShipmentMonth() { return shipmentMonth; }
     public double getQuantityTonnes() { return quantityTonnes; }
+    public void setQuantityTonnes(double quantityTonnes) { this.quantityTonnes = quantityTonnes; }
     public String getOriginPort() { return originPort; }
     public String getDestinationPort() { return destinationPort; }
 }
