@@ -18,6 +18,11 @@ public class TestRunner {
         scenarioClasses.add(Class.forName("scenarios.TradeScenario4"));
         scenarioClasses.add(Class.forName("scenarios.TradeScenario5"));
         scenarioClasses.add(Class.forName("scenarios.TradeScenario6"));
+        scenarioClasses.add(Class.forName("scenarios.TradeScenario7"));
+        scenarioClasses.add(Class.forName("scenarios.TradeScenario8"));
+        scenarioClasses.add(Class.forName("scenarios.TradeScenario9"));
+        scenarioClasses.add(Class.forName("scenarios.TradeScenario10"));
+        scenarioClasses.add(Class.forName("scenarios.TradeScenario11"));
 
         int passed = 0;
         int failed = 0;

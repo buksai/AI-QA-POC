@@ -108,6 +108,9 @@ function logBlock(text) {
     let cls = "";
     if (/^PASSED/.test(line)) cls = "line-pass";
     else if (/FAILED|Error/.test(line)) cls = "line-fail";
+    else if (/^\+/.test(line)) cls = "line-pass";
+    else if (/^-/.test(line)) cls = "line-fail";
+    else if (/^(---|\+\+\+|@@)/.test(line)) cls = "line-tool";
     logLine(line, cls);
   });
 }
@@ -151,7 +154,14 @@ document.getElementById("btn-run").onclick = () => {
       logLine("");
       logLine("> " + data.name + "(" + JSON.stringify(data.input) + ")", "line-tool");
     } else if (kind === "tool_result") {
-      const out = (data.result && data.result.output) ? data.result.output : JSON.stringify(data.result);
+      let out;
+      if (data.result && data.result.diff) {
+        out = `(${data.result.total_fixed} files fixed: ${(data.result.files_fixed||[]).join(", ")})\n` + data.result.diff;
+      } else if (data.result && data.result.output) {
+        out = data.result.output;
+      } else {
+        out = JSON.stringify(data.result);
+      }
       logBlock(out.slice(0, 2000));
     } else if (kind === "final") {
       logLine("");

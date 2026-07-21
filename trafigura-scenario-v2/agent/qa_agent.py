@@ -98,8 +98,9 @@ def tool_draft_ticket(args):
 
 def tool_scan_and_fix_pattern(args):
     """Scans all scenario files for a pattern and applies the same fix to all matches.
-    This is the key multi-file fix capability — like fixing 50 scenarios at once."""
-    import re
+    Returns the actual before/after diff for every changed file, so the fix is
+    visible - not a silent bulk edit."""
+    import difflib
     pattern_text = args.get("find", "")
     replacement = args.get("replace", "")
     if not pattern_text or not replacement:
@@ -108,6 +109,7 @@ def tool_scan_and_fix_pattern(args):
     scenario_dir = os.path.join(WORKSPACE, "src", "scenarios")
     files_fixed = []
     files_skipped = []
+    diffs = {}
 
     for fname in sorted(os.listdir(scenario_dir)):
         if not fname.endswith(".java"):
@@ -117,17 +119,26 @@ def tool_scan_and_fix_pattern(args):
             original = f.read()
         if pattern_text in original:
             fixed = original.replace(pattern_text, replacement)
+            diff_lines = list(difflib.unified_diff(
+                original.splitlines(), fixed.splitlines(),
+                fromfile=fname + " (before)", tofile=fname + " (after)",
+                lineterm="", n=1
+            ))
             with open(fpath, "w") as f:
                 f.write(fixed)
             files_fixed.append(fname)
+            diffs[fname] = "\n".join(diff_lines)
         else:
             files_skipped.append(fname)
+
+    diff_report = "\n\n".join(diffs[f] for f in files_fixed)
 
     return {
         "files_fixed": files_fixed,
         "files_skipped": files_skipped,
         "total_fixed": len(files_fixed),
-        "pattern_applied": f"'{pattern_text}' → '{replacement}'"
+        "pattern_applied": f"'{pattern_text}' -> '{replacement}'",
+        "diff": diff_report
     }
 
 
@@ -203,7 +214,7 @@ TOOLS = [
     },
     {
         "name": "scan_and_fix_pattern",
-        "description": "Scan ALL scenario files and apply the same fix to every file that contains the pattern. This is how you fix 50 scenarios at once — not one by one. Provide 'find' (the exact text to find, e.g. a broken date or wrong parameter) and 'replace' (what to replace it with). Returns a list of every file that was changed.",
+        "description": "Scan ALL scenario files and apply the same fix to every file that contains the pattern. This is how you fix 50 scenarios at once — not one by one. Provide 'find' (the exact text to find, e.g. a broken date or wrong parameter) and 'replace' (what to replace it with). Returns the list of files changed AND a unified diff showing the exact before/after code change for every file — include this diff in your final report so the change is visible, not just the file count.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -270,8 +281,10 @@ you're given:
      pattern matches (e.g. wrong pricing date, missing prerequisite step), \
      use scan_and_fix_pattern to apply the fix across ALL scenario files at \
      once — not one by one. This is critical: if 50 scenarios share the same \
-     broken parameter, fix all 50 in one tool call. Report exactly how many \
-     files were fixed. Then re-run the suite to confirm green.
+     broken parameter, fix all 50 in one tool call. The tool returns a real \
+     unified diff of every file changed — include that diff in your final \
+     report so the actual code change is visible, not just a file count. \
+     Then re-run the suite to confirm green.
   2. Smart maintenance: when business logic changes, identify which scenarios \
      are impacted (check_backend_config + read the scenario files) and what \
      updates they need.
