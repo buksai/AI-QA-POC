@@ -1,45 +1,42 @@
-# AI in QA Automation — POC
+# AI in QA Automation — Trafigura POC
 
 **Author:** Huseynbala Gurbanli
 
-Working prototype demonstrating 4 AI-assisted QA use cases (matching the client brief):
+A real, working proof of concept demonstrating AI-assisted QA automation for
+Trafigura's trade capture system — a Java-based, action-driven test framework
+covering commodity trade lifecycle scenarios (trade creation, tranche
+shipments, external valuation via Jupiter, baseline evidence checks).
 
-1. **Self-healing regression tests** — AI analyzes failures from test runs, identifies root cause, proposes code fixes
-2. **Smart test maintenance** — AI analyzes code changes (PRs/commits) and identifies which test scenarios are impacted
-3. **API test generation** — AI generates test action classes from captured HTTP traffic (Fiddler-style)
-4. **Agent-based issue creation** — AI drafts ready-to-file bug tickets from test execution results
+**Everything relevant is in [`trafigura-scenario/`](./trafigura-scenario/).**
+See [`trafigura-scenario/README_TRAFIGURA.md`](./trafigura-scenario/README_TRAFIGURA.md)
+for the full run order and rationale.
 
-**Guardrail:** human-in-the-loop everywhere. AI proposes; engineers approve. Nothing merges or files automatically.
+## Use cases covered
 
-## Setup
+1. **Self-healing regression tests** (priority) — AI reads a real test failure
+   and a real git diff, proposes a corrected scenario baseline, applies it
+   after human approval, and re-runs to green
+2. **Smart test maintenance** — AI reads a real code change and predicts
+   which scenarios are impacted, before any test even runs
+3. **Agent-based issue creation** — AI drafts a ready-to-file bug ticket from
+   real test failure output
+4. **Bonus: WPF → Playwright action migration** — AI migrates a legacy WPF
+   desktop UI action to the equivalent Playwright web action, for the planned
+   React UI migration
+
+## Requirements
+
+- JDK 21+ (`javac -version` to check)
+- Python 3 with `pip install -r requirements.txt`
+- `.env` in the repo root with `ANTHROPIC_API_KEY=...`
+
+## Quick start
 
 ```bash
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
+cd trafigura-scenario
+python3 web_app.py
 ```
+Open `localhost:5003` and click through the 7 steps in order.
 
-Create a `.env` file in the root with:
-```
-ANTHROPIC_API_KEY=your_key_here
-```
-
-## Run — two modes
-
-**Interactive web UI** (4 tabs, one per use case):
-```bash
-python app.py
-```
-Then open http://localhost:5000
-
-**End-to-end simulation** (one command, plays through a full nightly QA cycle):
-```bash
-python simulate_day.py
-```
-
-## Next phase (full POC)
-
-- Connect UC1 to real CI failure logs instead of pasted text
-- Connect UC2 to the actual git repo (webhook on PR)
-- Parse real Fiddler .saz session files for UC3
-- Connect UC4 to Jira/ADO API for one-click ticket filing
+Full details, CLI-only instructions, and the reasoning behind the design are
+in `trafigura-scenario/README_TRAFIGURA.md`.
