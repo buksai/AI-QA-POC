@@ -151,7 +151,14 @@ public class TradeApiServer {
         private void handleValuation(HttpExchange exchange, Matcher m) throws IOException {
             m.matches();
             String tradeId = m.group(1);
-            TradeValuation v = SYSTEM.getValuation(tradeId);
+            String query = exchange.getRequestURI().getQuery();
+            String pricingDate = null;
+            if (query != null && query.startsWith("pricingDate=")) {
+                pricingDate = query.substring("pricingDate=".length());
+            }
+            TradeValuation v = (pricingDate != null)
+                    ? SYSTEM.getValuationForPricingDate(tradeId, pricingDate)
+                    : SYSTEM.getValuation(tradeId);
             respond(exchange, 200, Json.obj(
                     "pricePerTonneUsd", v.getPricePerTonneUsd(),
                     "totalValueUsd", v.getTotalValueUsd()

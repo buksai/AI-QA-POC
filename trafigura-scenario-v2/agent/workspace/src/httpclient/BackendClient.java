@@ -46,6 +46,11 @@ public class BackendClient {
         return Double.parseDouble(extract(resp, "totalValueUsd"));
     }
 
+    public double getValuationForPricingDate(String tradeId, String pricingDate) {
+        String resp = get(BASE + "/trades/" + tradeId + "/valuation?pricingDate=" + pricingDate);
+        return Double.parseDouble(extract(resp, "totalValueUsd"));
+    }
+
     public String getTradeStatus(String tradeId) {
         String resp = get(BASE + "/trades/" + tradeId);
         return extract(resp, "status");

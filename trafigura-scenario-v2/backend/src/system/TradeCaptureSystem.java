@@ -56,6 +56,12 @@ public class TradeCaptureSystem {
         return jupiter.getValuation(t);
     }
 
+    public TradeValuation getValuationForPricingDate(String tradeId, String pricingDate) {
+        Trade t = trades.get(tradeId);
+        if (t == null) throw new IllegalArgumentException("Trade not found: " + tradeId);
+        return jupiter.getValuationForPricingDate(t, pricingDate);
+    }
+
     public Trade getTrade(String tradeId) {
         return trades.get(tradeId);
     }

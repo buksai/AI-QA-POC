@@ -17,7 +17,7 @@ public class TitanReleaseScenario {
     private static final BackendClient backend = new BackendClient();
 
     // PATTERN-001: this date has no pricing in the release environment
-    private static final String PRICING_DATE = "2026-01-15";
+    private static final String PRICING_DATE = "2026-02-15";
 
     public static void testCopperTradeWithPricingDate() {
         String tradeId = backend.createTrade("Copper Concentrate", "Andes Mining SA");
@@ -25,7 +25,7 @@ public class TitanReleaseScenario {
         backend.confirmTrade(tradeId);
 
         double valuation = backend.getValuationTotalUsd(tradeId);
-        // In release env this fails: "No pricing data found for date 2026-01-15"
+        // In release env this fails: "No pricing data found for date 2026-02-15"
         assertNumeric("pricing.totalValueUsd", 6375000.00, valuation, 0.01);
     }
 
