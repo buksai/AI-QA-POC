@@ -3,15 +3,19 @@ package scenarios;
 import httpclient.BackendClient;
 
 /**
- * Trade scenario 44 — GENUINE PRODUCT DEFECT (not a test maintenance issue).
+ * Trade scenario 44 — tests REQ-114 (volume discount for large trades).
  *
- * Business rule per Ops: trades of 5,000+ tonnes should receive a 3% volume
- * discount on the unit price. The backend does NOT implement this discount —
- * this is a real gap in Jupiter's pricing logic, not a stale test baseline.
- * This scenario will fail regardless of the fee toggle state, and the
- * failure ratio won't match any known knowledge-base pattern (neither 1.0
- * nor 1.015) — the agent should recognize this as requiring human review,
- * not apply a pattern-based fix.
+ * REQ-114 (see knowledge_base/requirements.json): trades of 5,000+ tonnes
+ * receive a 3% volume discount on the unit price, approved by Commercial
+ * Ops. In the healthy baseline this requirement is honored and this test
+ * passes. "Break the suite" simulates a bad release that silently disables
+ * the discount (a REAL, requirement-violating product defect) - the test
+ * then fails, and the failure ratio (~1.046) does not match any known
+ * knowledge-base FIX pattern (neither the 1.0 nor 1.015 factors), which is
+ * exactly the signal that this is a genuine defect requiring a ticket, not
+ * a pattern-based test-maintenance fix. This baseline must NEVER be
+ * auto-recalculated by a fee-type tool (e.g. recompute_valuation_baselines)
+ * - it documents REQ-114's required behavior, not the fee toggle.
  */
 public class TradeScenario44 {
     private static final BackendClient backend = new BackendClient();
@@ -21,8 +25,7 @@ public class TradeScenario44 {
         backend.addTranche(tradeId, "2026-09", 6000.0, "Buenaventura", "Qingdao");
         backend.confirmTrade(tradeId);
         double val = backend.getValuationTotalUsd(tradeId);
-        // Expected: 6000t * $4250/t * 0.97 (3% volume discount per Ops policy) = $24,727,500.00
-        // Actual backend does not apply any volume discount - always $25,500,000.00 (fee off)
+        // REQ-114: 6,000t * $4,250/t * 0.97 (3% volume discount) = $24,735,000.00
         assertNumeric("valuation.totalValueUsd", 24735000.00, val, 0.01);
     }
 
