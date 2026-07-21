@@ -55,17 +55,19 @@ public class TradeApiServer {
 
         @Override
         public void handle(HttpExchange exchange) throws IOException {
+            String path = exchange.getRequestURI().getPath();
+            String method = exchange.getRequestMethod();
+            System.out.println(java.time.LocalTime.now().withNano(0) + "  " + method + " " + path);
+
             // CORS so the static HTML UIs (opened from file:// or another port) can call this
             exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
             exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
             exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
-            if (exchange.getRequestMethod().equals("OPTIONS")) {
+            if (method.equals("OPTIONS")) {
                 exchange.sendResponseHeaders(204, -1);
                 return;
             }
 
-            String path = exchange.getRequestURI().getPath();
-            String method = exchange.getRequestMethod();
             String body = readBody(exchange);
 
             try {
