@@ -96,6 +96,15 @@ def tool_draft_ticket(args):
     return {"ticket_written": name}
 
 
+def tool_read_knowledge_base(_args):
+    import json as _json
+    path = os.path.join(WORKSPACE, "knowledge_base", "fix_patterns.json")
+    if not os.path.exists(path):
+        return {"error": "knowledge base not found"}
+    with open(path) as f:
+        return _json.load(f)
+
+
 def tool_read_fiddler_capture(args):
     path = args.get("path", "captures/create_order.saz.txt")
     full = os.path.join(WORKSPACE, path)
@@ -158,6 +167,11 @@ TOOLS = [
         },
     },
     {
+        "name": "read_knowledge_base",
+        "description": "Read the team's shared knowledge base of known fix patterns. Each pattern has a trigger (error signature from logs), root cause, and fix. Multiple engineers contribute patterns here — Wagner, Vera, and others. Call this when you see a failure to check if it matches a known pattern before attempting to reason from scratch.",
+        "input_schema": {"type": "object", "properties": {}},
+    },
+    {
         "name": "read_fiddler_capture",
         "description": "Read a captured Fiddler HTTP session (request/response pairs recorded from the trade capture API). Use this when you want to generate a new automated API test action class from real captured traffic - read the capture, then write the generated test with write_file. Default path 'captures/create_order.saz.txt'.",
         "input_schema": {
@@ -182,6 +196,7 @@ DISPATCH = {
     "read_file": tool_read_file,
     "write_file": tool_write_file,
     "draft_ticket": tool_draft_ticket,
+    "read_knowledge_base": tool_read_knowledge_base,
     "read_fiddler_capture": tool_read_fiddler_capture,
     "migrate_wpf_action": tool_migrate_wpf_action,
 }
@@ -202,9 +217,12 @@ use your judgment.
 
 Your capabilities span four areas, and which one applies depends on the task \
 you're given:
-  1. Self-healing: when the suite fails due to a legitimate business-config \
-     change (a stale baseline), propose the corrected scenario file, write it \
-     with write_file, and re-check until green.
+  1. Self-healing with pattern matching: when the suite fails, first call \
+     read_knowledge_base to check if the failure matches a known pattern \
+     (the team's shared knowledge of recurring fix patterns across release \
+     and master branches). If it matches, apply the fix from the pattern. \
+     If not, reason from the failure and backend config. Write the fix with \
+     write_file and re-run until green.
   2. Smart maintenance: when business logic changes, identify which scenarios \
      are impacted (check_backend_config + read the scenario files) and what \
      updates they need.

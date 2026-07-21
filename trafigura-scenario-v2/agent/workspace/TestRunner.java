@@ -12,6 +12,7 @@ public class TestRunner {
     public static void main(String[] args) throws Exception {
         List<Class<?>> scenarioClasses = new ArrayList<>();
         scenarioClasses.add(Class.forName("scenarios.CopperConcentrateTradeScenario"));
+        scenarioClasses.add(Class.forName("scenarios.TitanReleaseScenario"));
 
         int passed = 0;
         int failed = 0;

@@ -1,0 +1,31 @@
+{
+  "patterns": [
+    {
+      "id": "PATTERN-001",
+      "name": "Pricing date not found",
+      "trigger": "No pricing data found for date",
+      "root_cause": "The date specified in the test scenario does not have pricing data in this environment. Common on release branch where market data is behind.",
+      "fix": "Shift the pricing date forward by 30 days in the affected test scenarios. Look for date parameters passed to pricing/valuation action calls.",
+      "example": "pricingDate = '2026-01-15' → pricingDate = '2026-02-15'",
+      "taught_by": "Wagner"
+    },
+    {
+      "id": "PATTERN-002", 
+      "name": "Trade approval prerequisite missing",
+      "trigger": "ApprovalAction failed: trade must be in INTENT state before approval",
+      "root_cause": "In the release environment, the workflow requires an explicit SetIntentAction before ApprovalAction. On master this step is implicit.",
+      "fix": "Insert SetIntentAction call immediately before any ApprovalAction in affected scenarios.",
+      "example": "ApprovalAction.run(ctx) → SetIntentAction.run(ctx); ApprovalAction.run(ctx)",
+      "taught_by": "Vera"
+    },
+    {
+      "id": "PATTERN-003",
+      "name": "Valuation baseline drift after fee change",
+      "trigger": "Baseline mismatch on field 'valuation.totalValueUsd'",
+      "root_cause": "Jupiter valuation formula changed (e.g. handling fee added). All scenarios asserting on totalValueUsd need their baseline values recalculated.",
+      "fix": "Recalculate expected baseline: multiply old value by the new fee factor (1 + fee_rate). Update all affected CompareBaselineAction calls.",
+      "example": "8500000.00 → 8627500.00 (for 1.5% fee on 2000t at $4250/t)",
+      "taught_by": "Huseyn"
+    }
+  ]
+}

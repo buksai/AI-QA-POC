@@ -194,6 +194,7 @@
         <div class="pipeline" id="pipeline">
           <div class="pipe-step" data-tool="check_suite"><div class="pipe-icon">▷</div><div class="pipe-label">check_suite</div><div class="pipe-count" id="pc-check_suite"></div></div>
           <div class="pipe-step" data-tool="check_backend_config"><div class="pipe-icon">⚙</div><div class="pipe-label">check_backend_config</div><div class="pipe-count" id="pc-check_backend_config"></div></div>
+          <div class="pipe-step" data-tool="read_knowledge_base"><div class="pipe-icon">◈</div><div class="pipe-label">read_knowledge_base</div><div class="pipe-count" id="pc-read_knowledge_base"></div></div>
           <div class="pipe-step" data-tool="list_scenario_files"><div class="pipe-icon">☰</div><div class="pipe-label">list_scenario_files</div><div class="pipe-count" id="pc-list_scenario_files"></div></div>
           <div class="pipe-step" data-tool="read_file"><div class="pipe-icon">◇</div><div class="pipe-label">read_file</div><div class="pipe-count" id="pc-read_file"></div></div>
           <div class="pipe-step" data-tool="write_file"><div class="pipe-icon">✎</div><div class="pipe-label">write_file</div><div class="pipe-count" id="pc-write_file"></div></div>
@@ -428,7 +429,7 @@ document.getElementById("btn-dev-change").onclick = async (e) => {
 
 const MISSION_TASKS = {
   auto: "Investigate the current state of the regression suite and fix anything that needs fixing. Report your findings and actions when done.",
-  heal: "The regression suite may be failing. Diagnose the cause, and if it's a stale baseline from a legitimate business-config change, self-heal the affected scenario files and confirm the suite is green. Report what you did.",
+  heal: "The regression suite may have failures from the release branch environment. Check the suite, then consult the team knowledge base (read_knowledge_base) to see if failures match known patterns. Apply fixes based on the matching patterns across all affected scenarios, then re-run to confirm green. Report which patterns you applied and why.",
   maintain: "A business-logic configuration may have changed on the backend. Perform impact analysis: determine what changed, identify which regression scenarios are affected and why, and describe the updates each needs. You may apply the fixes. Report your analysis.",
   apitest: "Generate a new automated API test action class from the captured Fiddler session in captures/create_order.saz.txt. Read the capture, derive a runnable test for the trade-creation endpoint that matches the existing scenario style, and write it into the tests as a new file. Report what you generated.",
   ticket: "Run the regression suite. If there are failures, triage each one: decide whether it is a genuine product defect or routine baseline drift from a config change. For anything that looks like a real defect, draft a bug ticket. Explain your triage reasoning.",
