@@ -40,3 +40,11 @@ Open `localhost:5003` and click through the 7 steps in order.
 
 Full details, CLI-only instructions, and the reasoning behind the design are
 in `trafigura-scenario/README_TRAFIGURA.md`.
+
+## V2 — advanced version
+
+[`trafigura-scenario-v2/`](./trafigura-scenario-v2/) is a more advanced build:
+a real running backend, two functioning UIs (legacy WPF-style + new web-style)
+both driving the same live business logic, and an autonomous AI agent that
+investigates and decides for itself rather than following a fixed sequence of
+buttons. See [`trafigura-scenario-v2/README_V2.md`](./trafigura-scenario-v2/README_V2.md).

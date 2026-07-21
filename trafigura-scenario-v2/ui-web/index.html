@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Trade Capture — Web</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f6f8fa; --card: #ffffff; --border: #e2e8f0; --text: #0f172a; --muted: #64748b;
+    --accent: #0f6e5c; --accent-light: #e6f4f1; --green: #16a34a; --red: #dc2626;
+  }
+  * { box-sizing: border-box; }
+  body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 32px; }
+  .app { max-width: 720px; margin: 0 auto; }
+  .app-header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+  .logo { width: 32px; height: 32px; border-radius: 8px; background: var(--accent); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; }
+  h1 { font-size: 18px; margin: 0; }
+  p.subtitle { color: var(--muted); font-size: 13px; margin: 2px 0 0; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.03); }
+  .card h2 { font-size: 14px; margin: 0 0 14px; color: var(--text); display: flex; align-items: center; gap: 8px; }
+  .field { margin-bottom: 12px; }
+  .field label { display: block; font-size: 12.5px; color: var(--muted); margin-bottom: 4px; font-weight: 500; }
+  .field input, .field select {
+    width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px;
+    font-family: 'Inter', sans-serif; font-size: 13.5px; background: #fff;
+  }
+  .field input:focus, .field select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-light); }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  button {
+    font-family: 'Inter', sans-serif; font-weight: 500; font-size: 13.5px; padding: 8px 16px;
+    border-radius: 8px; border: none; background: var(--accent); color: white; cursor: pointer;
+  }
+  button:hover { background: #0c5a4a; }
+  button.secondary { background: var(--accent-light); color: var(--accent); }
+  button.secondary:hover { background: #d5ede8; }
+  .btn-group { display: flex; gap: 8px; margin-top: 4px; }
+  .status-pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 20px; font-size: 12.5px; font-weight: 600; background: #f1f5f9; color: var(--muted); }
+  .status-pill.confirmed { background: #dcfce7; color: var(--green); }
+  table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 12.5px; }
+  th { text-align: left; color: var(--muted); font-weight: 500; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+  td { padding: 6px 8px; border-bottom: 1px solid #f1f5f9; }
+  .valuation-display { font-size: 22px; font-weight: 700; color: var(--accent); }
+  .log-box { font-family: ui-monospace, monospace; font-size: 11.5px; background: #0f172a; color: #94a3b8; border-radius: 8px; padding: 10px 12px; height: 90px; overflow-y: auto; }
+  .log-box .entry { margin-bottom: 2px; }
+  .conn-badge { font-size: 11.5px; color: var(--muted); text-align: right; margin-top: 8px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="app-header">
+    <div class="logo">TC</div>
+    <div>
+      <h1>Trade Capture</h1>
+      <p class="subtitle">Web client — React migration target</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>New Trade</h2>
+    <div class="row2">
+      <div class="field">
+        <label>Commodity</label>
+        <select id="commodity-select" data-testid="commodity-select"><option>Copper Concentrate</option></select>
+      </div>
+      <div class="field">
+        <label>Counterparty</label>
+        <input id="counterparty-input" data-testid="counterparty-input" value="Southern Metals Corp">
+      </div>
+    </div>
+    <div class="btn-group">
+      <button id="create-trade-button" data-testid="create-trade-button">Create trade</button>
+      <span class="status-pill" id="trade-status-label" data-testid="trade-status-label">DRAFT</span>
+    </div>
+    <div style="margin-top:8px; font-size:12.5px; color:var(--muted);">Trade ID: <span id="trade-id-display" data-testid="trade-id-display">—</span></div>
+  </div>
+
+  <div class="card">
+    <h2>Shipment Tranche</h2>
+    <div class="row2">
+      <div class="field"><label>Shipment month</label><input id="month-input" data-testid="month-input" value="2026-09"></div>
+      <div class="field"><label>Quantity (tonnes)</label><input id="qty-input" data-testid="qty-input" type="number" value="2000"></div>
+      <div class="field"><label>Origin port</label><input id="origin-input" data-testid="origin-input" value="Buenaventura"></div>
+      <div class="field"><label>Destination port</label><input id="dest-input" data-testid="dest-input" value="Qingdao"></div>
+    </div>
+    <button id="add-tranche-button" data-testid="add-tranche-button" class="secondary">Add tranche</button>
+    <table>
+      <thead><tr><th>#</th><th>Month</th><th>Qty (t)</th><th>Origin</th><th>Dest</th></tr></thead>
+      <tbody id="tranche-table-body" data-testid="tranche-table-body"></tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>Lifecycle</h2>
+    <div class="btn-group">
+      <button id="confirm-trade-button" data-testid="confirm-trade-button">Confirm trade</button>
+      <button id="get-valuation-button" data-testid="get-valuation-button" class="secondary">Get Jupiter valuation</button>
+    </div>
+    <div style="margin-top:14px;">
+      <div style="font-size:12.5px; color:var(--muted);">Valuation (USD)</div>
+      <div class="valuation-display" id="valuation-display" data-testid="valuation-display">—</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Amend Trade</h2>
+    <div class="row2">
+      <div class="field"><label>Tranche index</label><input id="amend-idx-input" data-testid="amend-idx-input" type="number" value="0"></div>
+      <div class="field"><label>New quantity (t)</label><input id="amend-qty-input" data-testid="amend-qty-input" type="number" value="2500"></div>
+    </div>
+    <button id="amend-button" data-testid="amend-button">Amend tranche</button>
+  </div>
+
+  <div class="card">
+    <h2>Event log</h2>
+    <div class="log-box" id="event-log" data-testid="event-log"></div>
+  </div>
+
+  <div class="conn-badge">Connected to Trade Capture Backend — 127.0.0.1:5100</div>
+</div>
+
+<script>
+const API = "http://127.0.0.1:5100/api";
+let currentTradeId = null;
+
+function log(msg) {
+  const el = document.getElementById("event-log");
+  const line = document.createElement("div");
+  line.className = "entry";
+  line.textContent = new Date().toLocaleTimeString() + "  " + msg;
+  el.appendChild(line);
+  el.scrollTop = el.scrollHeight;
+}
+
+async function api(method, path, body) {
+  const res = await fetch(API + path, {
+    method, headers: {"Content-Type": "application/json"},
+    body: body ? JSON.stringify(body) : undefined
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "request failed");
+  return data;
+}
+
+function renderTrade(trade) {
+  document.getElementById("trade-id-display").textContent = trade.tradeId;
+  const statusEl = document.getElementById("trade-status-label");
+  statusEl.textContent = trade.status;
+  statusEl.className = "status-pill" + (trade.status === "CONFIRMED" ? " confirmed" : "");
+  const tbody = document.getElementById("tranche-table-body");
+  tbody.innerHTML = "";
+  trade.tranches.forEach(t => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${t.index}</td><td>${t.shipmentMonth}</td><td>${t.quantityTonnes}</td><td>${t.originPort}</td><td>${t.destinationPort}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+document.getElementById("create-trade-button").onclick = async () => {
+  try {
+    const trade = await api("POST", "/trades", {
+      commodity: document.getElementById("commodity-select").value,
+      counterparty: document.getElementById("counterparty-input").value
+    });
+    currentTradeId = trade.tradeId;
+    renderTrade(trade);
+    log("Trade created: " + trade.tradeId);
+  } catch (e) { log("Error: " + e.message); }
+};
+
+document.getElementById("add-tranche-button").onclick = async () => {
+  if (!currentTradeId) { log("Error: create a trade first"); return; }
+  try {
+    const trade = await api("POST", `/trades/${currentTradeId}/tranches`, {
+      shipmentMonth: document.getElementById("month-input").value,
+      quantityTonnes: parseFloat(document.getElementById("qty-input").value),
+      originPort: document.getElementById("origin-input").value,
+      destinationPort: document.getElementById("dest-input").value
+    });
+    renderTrade(trade);
+    log("Tranche added to " + currentTradeId);
+  } catch (e) { log("Error: " + e.message); }
+};
+
+document.getElementById("confirm-trade-button").onclick = async () => {
+  if (!currentTradeId) { log("Error: create a trade first"); return; }
+  try {
+    const trade = await api("POST", `/trades/${currentTradeId}/confirm`);
+    renderTrade(trade);
+    log("Trade confirmed: " + currentTradeId);
+  } catch (e) { log("Error: " + e.message); }
+};
+
+document.getElementById("get-valuation-button").onclick = async () => {
+  if (!currentTradeId) { log("Error: create a trade first"); return; }
+  try {
+    const v = await api("GET", `/trades/${currentTradeId}/valuation`);
+    document.getElementById("valuation-display").textContent = "$" + v.totalValueUsd.toLocaleString();
+    log("Valuation fetched from Jupiter: $" + v.totalValueUsd.toLocaleString());
+  } catch (e) { log("Error: " + e.message); }
+};
+
+document.getElementById("amend-button").onclick = async () => {
+  if (!currentTradeId) { log("Error: create a trade first"); return; }
+  try {
+    const idx = document.getElementById("amend-idx-input").value;
+    const qty = parseFloat(document.getElementById("amend-qty-input").value);
+    const trade = await api("POST", `/trades/${currentTradeId}/tranches/${idx}/amend`, { quantityTonnes: qty });
+    renderTrade(trade);
+    log("Tranche " + idx + " amended to " + qty + " tonnes");
+  } catch (e) { log("Error: " + e.message); }
+};
+</script>
+</body>
+</html>

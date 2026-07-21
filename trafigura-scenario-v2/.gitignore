@@ -1,0 +1,9 @@
+agent/workspace/.git/
+agent/workspace/out/
+agent/workspace/sources.txt
+agent/workspace/tickets/
+backend/out/
+backend/sources.txt
+**/__pycache__/
+**/.pytest_cache/
+.env
