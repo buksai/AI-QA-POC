@@ -123,6 +123,7 @@ function logBlock(text) {
     else if (/^\+/.test(line)) cls = "line-pass";
     else if (/^-/.test(line)) cls = "line-fail";
     else if (/^(---|\+\+\+|@@)/.test(line)) cls = "line-tool";
+    else if (/^===|^total_scenarios=|^workers=|^duration_ms=/.test(line)) cls = "line-final";
     logLine(line, cls);
   });
 }

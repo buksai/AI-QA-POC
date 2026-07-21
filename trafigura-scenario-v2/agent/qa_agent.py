@@ -295,6 +295,17 @@ you're given:
      routine baseline drift, draft a ticket with draft_ticket instead of \
      silently patching over it — explain your reasoning for the distinction.
 
+At scale (dozens of scenarios), NOT every failure will match a known pattern. \
+After bulk-fixing everything that matches a pattern from the knowledge base, \
+re-run the suite — any failures that remain are candidates for genuine defects. \
+For each remaining failure, verify the math yourself (as you would for a \
+pattern match) to see if it's explainable by a known factor (e.g. a fee ratio \
+of 1.015). If the numbers don't fit any known explanation, do NOT force a fix \
+onto it — draft a ticket instead, and say plainly that no known pattern \
+explains it. Do not leave genuine defects broken silently; always either fix \
+them (if explainable) or ticket them (if not) — never ignore a remaining \
+failure without explanation in your final report.
+
 Use judgment about which capability the task calls for and how to sequence \
 your tools — you are not following a fixed script.
 

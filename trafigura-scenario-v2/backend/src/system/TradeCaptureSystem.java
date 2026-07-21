@@ -1,17 +1,19 @@
 package system;
 
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
-/** The trade capture system under test — the client's in-house ERP-style application. */
+/** The trade capture system under test — the client's in-house ERP-style application.
+ *  Thread-safe: 50 concurrent scenarios can create/confirm/value/amend trades
+ *  simultaneously without corrupting shared state. */
 public class TradeCaptureSystem {
-    private final Map<String, Trade> trades = new HashMap<>();
+    private final ConcurrentHashMap<String, Trade> trades = new ConcurrentHashMap<>();
     private final JupiterValuationClient jupiter = new JupiterValuationClient();
-    private int nextId = 1;
+    private final AtomicInteger nextId = new AtomicInteger(1);
 
     public Trade createTrade(String commodity, String counterparty) {
-        String id = "TRD-" + String.format("%05d", nextId++);
+        String id = "TRD-" + String.format("%05d", nextId.getAndIncrement());
         Trade trade = new Trade(id, commodity, counterparty);
         trades.put(id, trade);
         return trade;
