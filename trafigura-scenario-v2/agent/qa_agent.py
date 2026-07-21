@@ -53,10 +53,16 @@ def tool_check_suite(_args):
 
 def tool_check_backend_config(_args):
     import urllib.request
+    import json as _json
     try:
+        result = {}
         with urllib.request.urlopen("http://127.0.0.1:5100/api/admin/handling-fee") as resp:
-            import json as _json
-            return _json.loads(resp.read())
+            result.update(_json.loads(resp.read()))
+        with urllib.request.urlopen("http://127.0.0.1:5100/api/admin/pricing-cutoff") as resp:
+            result.update(_json.loads(resp.read()))
+        with urllib.request.urlopen("http://127.0.0.1:5100/api/admin/volume-discount") as resp:
+            result.update(_json.loads(resp.read()))
+        return result
     except Exception as e:
         return {"error": f"Could not reach backend: {e}"}
 
@@ -94,6 +100,84 @@ def tool_draft_ticket(args):
     with open(full, "w") as f:
         f.write(args["content"])
     return {"ticket_written": name}
+
+
+def tool_recompute_valuation_baselines(args):
+    """Recalculates every valuation baseline assertion across all scenario
+    files by a given multiplier - e.g. applying a newly-enabled 1.5% fee
+    (multiplier=1.015) to whatever expected value is already coded, no
+    matter what quantity that file uses. This is formula-based smart
+    maintenance, not blind string substitution: each file's baseline is
+    individually recalculated from its own current value. Handles both
+    literal baselines (e.g. 8500000.00) and expression baselines
+    (e.g. 2000 * 4250.0) - appends the multiplier to expressions rather
+    than collapsing them to a single number, matching the codebase's style."""
+    import re
+    import difflib
+    multiplier = args.get("multiplier")
+    if multiplier is None:
+        return {"error": "requires 'multiplier' argument (e.g. 1.015 for a 1.5% fee)"}
+    multiplier = float(multiplier)
+
+    scenario_dir = os.path.join(WORKSPACE, "src", "scenarios")
+    # Captures: field name, the expected-value expression (anything up to the next comma), rest of args
+    pattern = re.compile(
+        r'(assertNumeric\("(?:[\w]+\.)?totalValueUsd",\s*)'
+        r'([^,]+?)'
+        r'(,\s*\w+,\s*[\d.]+\);)'
+    )
+    files_fixed = []
+    diffs = {}
+
+    for fname in sorted(os.listdir(scenario_dir)):
+        if not fname.endswith(".java"):
+            continue
+        fpath = os.path.join(scenario_dir, fname)
+        with open(fpath) as f:
+            original = f.read()
+
+        # SAFETY: never touch scenarios linked to an approved requirement
+        # (e.g. REQ-114 volume discount) - those failures are semantically
+        # distinct from a fee/date maintenance issue, and must be evaluated
+        # against the requirement, not silently recalculated away.
+        if "REQ-114" in original or "VolumeDiscount" in fname:
+            continue
+
+        changed = [False]
+        def repl(m):
+            expr = m.group(2).strip()
+            already_has_multiplier = "* 1.0" in expr and expr.count("*") >= 2
+            if already_has_multiplier:
+                return m.group(0)  # don't double-apply
+            if re.fullmatch(r"-?\d+\.?\d*", expr):
+                # Pure literal - recalculate the number directly
+                new_val = round(float(expr) * multiplier, 2)
+                new_expr = f"{new_val}"
+            else:
+                # Expression (e.g. "2000 * 4250.0") - append the multiplier factor
+                new_expr = f"{expr} * {multiplier}"
+            changed[0] = True
+            return f"{m.group(1)}{new_expr}{m.group(3)}"
+
+        fixed = pattern.sub(repl, original)
+        if changed[0] and fixed != original:
+            diff_lines = list(difflib.unified_diff(
+                original.splitlines(), fixed.splitlines(),
+                fromfile=fname + " (before)", tofile=fname + " (after)",
+                lineterm="", n=1
+            ))
+            with open(fpath, "w") as f:
+                f.write(fixed)
+            files_fixed.append(fname)
+            diffs[fname] = "\n".join(diff_lines)
+
+    diff_report = "\n\n".join(diffs[f] for f in files_fixed)
+    return {
+        "files_fixed": files_fixed,
+        "total_fixed": len(files_fixed),
+        "multiplier_applied": multiplier,
+        "diff": diff_report
+    }
 
 
 def tool_scan_and_fix_pattern(args):
@@ -140,6 +224,15 @@ def tool_scan_and_fix_pattern(args):
         "pattern_applied": f"'{pattern_text}' -> '{replacement}'",
         "diff": diff_report
     }
+
+
+def tool_read_requirements(_args):
+    import json as _json
+    path = os.path.join(WORKSPACE, "knowledge_base", "requirements.json")
+    if not os.path.exists(path):
+        return {"error": "requirements fixture not found"}
+    with open(path) as f:
+        return _json.load(f)
 
 
 def tool_read_knowledge_base(_args):
@@ -213,6 +306,15 @@ TOOLS = [
         },
     },
     {
+        "name": "recompute_valuation_baselines",
+        "description": "Recalculate EVERY valuation baseline assertion across all scenario files by a multiplier, individually per-file (each file's current baseline is multiplied, not replaced with one fixed string). Use this for fee-type changes where different scenarios have different quantities but share the same percentage change (e.g. multiplier=1.015 for a newly-enabled 1.5% fee). This is formula-based - it reads each file's own current value and recalculates it, rather than a blind find/replace.",
+        "input_schema": {
+            "type": "object",
+            "properties": {"multiplier": {"type": "number", "description": "e.g. 1.015 to apply a 1.5% increase"}},
+            "required": ["multiplier"]
+        },
+    },
+    {
         "name": "scan_and_fix_pattern",
         "description": "Scan ALL scenario files and apply the same fix to every file that contains the pattern. This is how you fix 50 scenarios at once — not one by one. Provide 'find' (the exact text to find, e.g. a broken date or wrong parameter) and 'replace' (what to replace it with). Returns the list of files changed AND a unified diff showing the exact before/after code change for every file — include this diff in your final report so the change is visible, not just the file count.",
         "input_schema": {
@@ -223,6 +325,11 @@ TOOLS = [
             },
             "required": ["find", "replace"]
         },
+    },
+    {
+        "name": "read_requirements",
+        "description": "Read the formal, approved business requirements fixture. Each requirement has an ID, text, approval evidence, and the scenarios that test it. Before classifying ANY failure as a genuine product defect, you MUST check whether an approved requirement backs the expected behavior and cite its ID. A test expecting behavior with no backing requirement is NOT a confirmed defect - classify it as 'unsupported test expectation' instead and say so explicitly.",
+        "input_schema": {"type": "object", "properties": {}},
     },
     {
         "name": "read_knowledge_base",
@@ -254,6 +361,8 @@ DISPATCH = {
     "read_file": tool_read_file,
     "write_file": tool_write_file,
     "draft_ticket": tool_draft_ticket,
+    "read_requirements": tool_read_requirements,
+    "recompute_valuation_baselines": tool_recompute_valuation_baselines,
     "scan_and_fix_pattern": tool_scan_and_fix_pattern,
     "read_knowledge_base": tool_read_knowledge_base,
     "read_fiddler_capture": tool_read_fiddler_capture,
@@ -301,10 +410,19 @@ re-run the suite — any failures that remain are candidates for genuine defects
 For each remaining failure, verify the math yourself (as you would for a \
 pattern match) to see if it's explainable by a known factor (e.g. a fee ratio \
 of 1.015). If the numbers don't fit any known explanation, do NOT force a fix \
-onto it — draft a ticket instead, and say plainly that no known pattern \
-explains it. Do not leave genuine defects broken silently; always either fix \
-them (if explainable) or ticket them (if not) — never ignore a remaining \
-failure without explanation in your final report.
+onto it.
+
+CRITICAL: before classifying anything as a genuine product defect, call \
+read_requirements and confirm an APPROVED requirement backs the expected \
+behavior, and cite its ID (e.g. REQ-114) in your ticket and report. A test \
+expecting behavior that no approved requirement documents is NOT automatically \
+a defect — classify it instead as "unsupported test expectation" and say so \
+explicitly; do not draft a defect ticket for it. Only draft a genuine-defect \
+ticket when: (1) an approved requirement exists, (2) the test correctly \
+represents it, (3) the backend violates it, and (4) no known fix pattern \
+explains the mismatch. Never leave a remaining failure unexplained in your \
+final report — every failure must end up fixed, ticketed as a defect (with \
+requirement citation), or flagged as an unsupported expectation.
 
 Use judgment about which capability the task calls for and how to sequence \
 your tools — you are not following a fixed script.

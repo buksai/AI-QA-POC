@@ -95,33 +95,46 @@ def reset_agent_workspace():
     )
     files_output = (restore.stdout + restore.stderr + clean.stdout + clean.stderr).strip() or "Workspace files restored to last committed state."
 
-    # Reset must also turn the backend's live fee toggle back OFF - it's an
-    # in-memory flag on the running Java process, so resetting test files
-    # alone does not touch it. Without this, the fee stays ON forever after
-    # the first "Break the suite" click and valuations never return to baseline.
+    # Reset must also restore ALL THREE backend runtime toggles to their
+    # healthy defaults - they're in-memory flags on the running Java
+    # process, so resetting test files alone does not touch them.
     import urllib.request
     try:
         req = urllib.request.Request(
-            "http://127.0.0.1:5100/api/admin/handling-fee",
-            data=b'{"enabled":"false"}',
-            headers={"Content-Type": "application/json"}, method="POST"
+            "http://127.0.0.1:5100/api/admin/reset-all",
+            data=b'{}', headers={"Content-Type": "application/json"}, method="POST"
         )
         with urllib.request.urlopen(req, timeout=3) as resp:
             import json as _json
-            fee_status = _json.loads(resp.read())
-        backend_output = f"Backend fee toggle reset: handlingFeeEnabled={fee_status['handlingFeeEnabled']}"
+            status = _json.loads(resp.read())
+        backend_output = f"Backend fully reset: {status}"
     except Exception as e:
-        backend_output = f"Could not reset backend fee toggle (is it running?): {e}"
+        backend_output = f"Could not reset backend (is it running?): {e}"
     return {"output": files_output + "\n" + backend_output}
 
 
 @app.route("/api/apply-dev-change", methods=["POST"])
 def apply_dev_change():
-    r = subprocess.run(
-        ["python3", "simulate_dev_change.py"], cwd=qa_agent.WORKSPACE,
-        capture_output=True, text=True
-    )
-    return {"output": r.stdout + r.stderr}
+    import urllib.request, json as _json
+    try:
+        req = urllib.request.Request(
+            "http://127.0.0.1:5100/api/admin/regression-event",
+            data=b'{}', headers={"Content-Type": "application/json"}, method="POST"
+        )
+        with urllib.request.urlopen(req, timeout=3) as resp:
+            status = _json.loads(resp.read())
+        output = (
+            ">> Ops shipped a bad release affecting Jupiter valuations:\n"
+            f">>   - 1.5% port handling fee enabled: {status['handlingFeeEnabled']}\n"
+            f">>   - Pricing data cutoff advanced to: {status['pricingDataAvailableFrom']}\n"
+            f">>   - REQ-114 volume discount honored: {status['volumeDiscountEnabled']}\n"
+            ">> This takes effect immediately for ALL callers: legacy UI, web UI, and agent tests.\n"
+            ">> The regression suite is now stale for some scenarios, and genuinely violates\n"
+            ">> REQ-114 for others."
+        )
+    except Exception as e:
+        output = f"Could not reach backend (is it running?): {e}"
+    return {"output": output}
 
 
 @app.route("/api/backend-status")

@@ -38,10 +38,109 @@ public class TradeApiServer {
         server.createContext("/api/trades", new TradesHandler());
         server.createContext("/api/health", exchange -> respond(exchange, 200, Json.obj("status", "ok")));
         server.createContext("/api/admin/handling-fee", new HandlingFeeHandler());
+        server.createContext("/api/admin/pricing-cutoff", new PricingCutoffHandler());
+        server.createContext("/api/admin/volume-discount", new VolumeDiscountHandler());
+        server.createContext("/api/admin/regression-event", new RegressionEventHandler());
+        server.createContext("/api/admin/reset-all", new ResetAllHandler());
 
         server.setExecutor(null);
         server.start();
         System.out.println("TradeApiServer listening on http://127.0.0.1:" + port);
+    }
+
+    /** Single controlled "bad release" event: flips all three toggles at once. */
+    static class RegressionEventHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "POST,OPTIONS");
+            String method = exchange.getRequestMethod();
+            System.out.println(java.time.LocalTime.now().withNano(0) + "  " + method + " /api/admin/regression-event");
+            if (method.equals("OPTIONS")) { exchange.sendResponseHeaders(204, -1); return; }
+            SYSTEM.jupiterClient().setHandlingFeeEnabled(true);
+            SYSTEM.jupiterClient().setPricingDataCutoff("2026-02-01");
+            SYSTEM.jupiterClient().setVolumeDiscountEnabled(false);
+            respond(exchange, 200, Json.obj(
+                    "handlingFeeEnabled", true,
+                    "pricingDataAvailableFrom", "2026-02-01",
+                    "volumeDiscountEnabled", false
+            ));
+        }
+    }
+
+    /** Restores all three toggles to their healthy defaults. */
+    static class ResetAllHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "POST,OPTIONS");
+            String method = exchange.getRequestMethod();
+            System.out.println(java.time.LocalTime.now().withNano(0) + "  " + method + " /api/admin/reset-all");
+            if (method.equals("OPTIONS")) { exchange.sendResponseHeaders(204, -1); return; }
+            SYSTEM.jupiterClient().setHandlingFeeEnabled(false);
+            SYSTEM.jupiterClient().resetPricingDataCutoff();
+            SYSTEM.jupiterClient().setVolumeDiscountEnabled(true);
+            respond(exchange, 200, Json.obj(
+                    "handlingFeeEnabled", false,
+                    "pricingDataAvailableFrom", SYSTEM.jupiterClient().getPricingDataCutoff(),
+                    "volumeDiscountEnabled", true
+            ));
+        }
+    }
+
+    static class VolumeDiscountHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
+            String method = exchange.getRequestMethod();
+            System.out.println(java.time.LocalTime.now().withNano(0) + "  " + method + " /api/admin/volume-discount");
+            if (method.equals("OPTIONS")) { exchange.sendResponseHeaders(204, -1); return; }
+
+            if (method.equals("GET")) {
+                respond(exchange, 200, Json.obj("volumeDiscountEnabled", SYSTEM.jupiterClient().isVolumeDiscountEnabled()));
+                return;
+            }
+            if (method.equals("POST")) {
+                String body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+                Map<String, String> f = Json.parseFlat(body);
+                boolean enabled = "true".equalsIgnoreCase(f.getOrDefault("enabled", "true"));
+                SYSTEM.jupiterClient().setVolumeDiscountEnabled(enabled);
+                respond(exchange, 200, Json.obj("volumeDiscountEnabled", enabled));
+                return;
+            }
+            respond(exchange, 404, Json.obj("error", "not found"));
+        }
+    }
+
+    static class PricingCutoffHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
+            String method = exchange.getRequestMethod();
+            System.out.println(java.time.LocalTime.now().withNano(0) + "  " + method + " /api/admin/pricing-cutoff");
+            if (method.equals("OPTIONS")) { exchange.sendResponseHeaders(204, -1); return; }
+
+            if (method.equals("GET")) {
+                respond(exchange, 200, Json.obj("pricingDataAvailableFrom", SYSTEM.jupiterClient().getPricingDataCutoff()));
+                return;
+            }
+            if (method.equals("POST")) {
+                String body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+                Map<String, String> f = Json.parseFlat(body);
+                if (f.containsKey("reset")) {
+                    SYSTEM.jupiterClient().resetPricingDataCutoff();
+                } else {
+                    SYSTEM.jupiterClient().setPricingDataCutoff(f.get("cutoffDate"));
+                }
+                respond(exchange, 200, Json.obj("pricingDataAvailableFrom", SYSTEM.jupiterClient().getPricingDataCutoff()));
+                return;
+            }
+            respond(exchange, 404, Json.obj("error", "not found"));
+        }
     }
 
     static class HandlingFeeHandler implements HttpHandler {

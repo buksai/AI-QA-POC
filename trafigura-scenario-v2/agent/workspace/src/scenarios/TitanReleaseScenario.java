@@ -38,7 +38,7 @@ public class TitanReleaseScenario {
         // In release env this fails: "trade must be in INTENT state before approval"
         // Fix: insert setIntent() call before this line
         double valuation = backend.getValuationTotalUsd(tradeId);
-        assertNumeric("approval.valuationUsd", 8500000.00, valuation, 0.01);
+        assertNumeric("approval.totalValueUsd", 8500000.00, valuation, 0.01);
     }
 
     private static void assertNumeric(String field, double expected, double actual, double tol) {

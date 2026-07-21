@@ -23,7 +23,7 @@ public class TradeScenario44 {
         double val = backend.getValuationTotalUsd(tradeId);
         // Expected: 6000t * $4250/t * 0.97 (3% volume discount per Ops policy) = $24,727,500.00
         // Actual backend does not apply any volume discount - always $25,500,000.00 (fee off)
-        assertNumeric("valuation.totalValueUsd", 24727500.00, val, 0.01);
+        assertNumeric("valuation.totalValueUsd", 24735000.00, val, 0.01);
     }
 
     private static void assertNumeric(String f, double exp, double act, double tol) {
