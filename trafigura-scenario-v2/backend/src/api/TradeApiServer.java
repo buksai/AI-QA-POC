@@ -37,10 +37,37 @@ public class TradeApiServer {
 
         server.createContext("/api/trades", new TradesHandler());
         server.createContext("/api/health", exchange -> respond(exchange, 200, Json.obj("status", "ok")));
+        server.createContext("/api/admin/handling-fee", new HandlingFeeHandler());
 
         server.setExecutor(null);
         server.start();
         System.out.println("TradeApiServer listening on http://127.0.0.1:" + port);
+    }
+
+    static class HandlingFeeHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
+            String method = exchange.getRequestMethod();
+            System.out.println(java.time.LocalTime.now().withNano(0) + "  " + method + " /api/admin/handling-fee");
+            if (method.equals("OPTIONS")) { exchange.sendResponseHeaders(204, -1); return; }
+
+            if (method.equals("GET")) {
+                respond(exchange, 200, Json.obj("handlingFeeEnabled", SYSTEM.jupiterClient().isHandlingFeeEnabled()));
+                return;
+            }
+            if (method.equals("POST")) {
+                String body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+                Map<String, String> f = Json.parseFlat(body);
+                boolean enabled = "true".equalsIgnoreCase(f.getOrDefault("enabled", "false"));
+                SYSTEM.jupiterClient().setHandlingFeeEnabled(enabled);
+                respond(exchange, 200, Json.obj("handlingFeeEnabled", enabled));
+                return;
+            }
+            respond(exchange, 404, Json.obj("error", "not found"));
+        }
     }
 
     static class TradesHandler implements HttpHandler {

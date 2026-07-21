@@ -28,6 +28,10 @@ public class TradeCaptureSystem {
         return trades.values();
     }
 
+    public JupiterValuationClient jupiterClient() {
+        return jupiter;
+    }
+
     public void confirmTrade(String tradeId) {
         Trade t = trades.get(tradeId);
         if (t == null) throw new IllegalArgumentException("Trade not found: " + tradeId);

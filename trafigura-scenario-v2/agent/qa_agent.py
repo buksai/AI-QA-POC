@@ -10,7 +10,7 @@ own judgment about the order and necessity of each step."
 
 Claude decides, autonomously, via real tool-use (function calling):
   - whether to check the suite at all
-  - whether to look at the git diff
+  - whether to check the live backend's runtime business configuration
   - whether healing is needed, and what the correct fix is
   - whether to draft a ticket
   - when it's actually done
@@ -51,11 +51,14 @@ def tool_check_suite(_args):
     return {"compiled": True, "passed": rc2 == 0, "output": out2}
 
 
-def tool_get_recent_diff(_args):
-    out, _ = _run(["git", "diff", "HEAD~1", "--", "src/system/"])
-    if not out.strip():
-        return {"diff": "", "note": "No committed system change found in the last commit."}
-    return {"diff": out[:6000]}
+def tool_check_backend_config(_args):
+    import urllib.request
+    try:
+        with urllib.request.urlopen("http://127.0.0.1:5100/api/admin/handling-fee") as resp:
+            import json as _json
+            return _json.loads(resp.read())
+    except Exception as e:
+        return {"error": f"Could not reach backend: {e}"}
 
 
 def tool_list_scenario_files(_args):
@@ -107,8 +110,8 @@ TOOLS = [
         "input_schema": {"type": "object", "properties": {}},
     },
     {
-        "name": "get_recent_diff",
-        "description": "Get the real git diff of the most recent commit to the system-under-test (src/system/). Use this to understand what a developer just changed, before or after checking test results.",
+        "name": "check_backend_config",
+        "description": "Check the LIVE backend's runtime business configuration (currently: whether the Jupiter port handling fee is enabled). The suite calls the real running backend over HTTP, so a change here is the equivalent of a code/config change a developer just made - call this to understand WHY the suite might be failing, the same way you'd read a diff.",
         "input_schema": {"type": "object", "properties": {}},
     },
     {
@@ -155,7 +158,7 @@ TOOLS = [
 
 DISPATCH = {
     "check_suite": tool_check_suite,
-    "get_recent_diff": tool_get_recent_diff,
+    "check_backend_config": tool_check_backend_config,
     "list_scenario_files": tool_list_scenario_files,
     "read_file": tool_read_file,
     "write_file": tool_write_file,
@@ -164,16 +167,21 @@ DISPATCH = {
 }
 
 SYSTEM_PROMPT = """You are an autonomous senior QA engineer agent responsible for the \
-Trafigura trade capture regression suite (Java, action-based test framework, \
-commodity trade lifecycle scenarios with Jupiter valuation baselines).
+Trafigura trade capture regression suite. The suite calls a REAL running backend \
+over HTTP (the same backend the legacy desktop UI and the new web UI both use) — \
+not an isolated in-memory copy. Business logic can change live on that backend \
+via a runtime configuration flag (currently: whether a port handling fee is \
+applied to Jupiter valuations), which is the equivalent of a developer's change \
+you'd otherwise see in a code diff.
 
 You have NOT been told what is currently wrong, if anything. You decide, on your \
 own initiative, what to investigate and in what order, using the tools available. \
-A reasonable investigation usually checks the suite's health and the recent change \
-history, but you are not required to follow any fixed sequence — use your judgment.
+A reasonable investigation usually checks the suite's health and the backend's \
+current configuration, but you are not required to follow any fixed sequence — \
+use your judgment.
 
-If you find failures caused by a legitimate change in business logic (a stale \
-baseline), propose the corrected scenario file and write it directly with \
+If you find failures caused by a legitimate change in business configuration (a \
+stale baseline), propose the corrected scenario file and write it directly with \
 write_file, then re-check the suite to confirm it's green. If a failure looks like \
 a genuine defect rather than routine baseline drift, draft a ticket instead of \
 silently patching over it — explain your reasoning for the distinction.

@@ -1,45 +1,43 @@
-"""Simulates a developer changing the Jupiter valuation logic (a real, common
-change: adding a handling fee to the pricing calculation). Makes a REAL code
-change to JupiterValuationClient.java and a REAL git commit."""
-import subprocess
+"""Simulates a developer/Ops enabling the port handling fee — but now as a
+REAL runtime toggle on the LIVE backend (POST /api/admin/handling-fee),
+not a source code edit. This is what makes the demo genuinely synchronized:
+flipping this affects the legacy UI, the web UI, and the agent's HTTP-based
+tests all at once, because they all read from the same running backend."""
 import sys
+import urllib.request
+import json
 
-PATH = "src/system/JupiterValuationClient.java"
+BACKEND = "http://127.0.0.1:5100/api/admin/handling-fee"
 
-with open(PATH) as f:
-    src = f.read()
 
-if "HANDLING_FEE_RATE" in src:
-    print("Already refactored. To reset the demo: git reset --hard origin/main")
-    sys.exit(1)
+def get_status():
+    with urllib.request.urlopen(BACKEND) as resp:
+        return json.loads(resp.read())["handlingFeeEnabled"]
 
-old_block = """    public TradeValuation getValuation(Trade trade) {
-        double qty = trade.totalQuantityTonnes();
-        double total = qty * COPPER_CONCENTRATE_PRICE_PER_TONNE;
-        return new TradeValuation(COPPER_CONCENTRATE_PRICE_PER_TONNE, total);
-    }"""
 
-new_block = """    private static final double HANDLING_FEE_RATE = 0.015; // 1.5% port handling fee, added per Ops request JIRA-4821
+def set_status(enabled):
+    req = urllib.request.Request(
+        BACKEND, data=json.dumps({"enabled": str(enabled).lower()}).encode(),
+        headers={"Content-Type": "application/json"}, method="POST"
+    )
+    with urllib.request.urlopen(req) as resp:
+        return json.loads(resp.read())["handlingFeeEnabled"]
 
-    public TradeValuation getValuation(Trade trade) {
-        double qty = trade.totalQuantityTonnes();
-        double subtotal = qty * COPPER_CONCENTRATE_PRICE_PER_TONNE;
-        double total = subtotal * (1 + HANDLING_FEE_RATE);
-        return new TradeValuation(COPPER_CONCENTRATE_PRICE_PER_TONNE, total);
-    }"""
 
-assert old_block in src, "Could not find expected block to replace"
-src = src.replace(old_block, new_block)
+if __name__ == "__main__":
+    try:
+        current = get_status()
+    except Exception as e:
+        print(f"Could not reach backend at {BACKEND} - is it running on port 5100?")
+        print(f"  ({e})")
+        sys.exit(1)
 
-with open(PATH, "w") as f:
-    f.write(src)
+    if current:
+        print("Handling fee is already enabled. To reset: POST enabled=false, or use the dashboard's Reset button.")
+        sys.exit(1)
 
-subprocess.run(["git", "add", PATH])
-subprocess.run([
-    "git", "-c", "user.email=dev@trafigura-poc.local", "-c", "user.name=Dev Team",
-    "commit", "-m",
-    "feat(valuation): apply 1.5% port handling fee to Jupiter valuation (JIRA-4821)"
-])
-print("\n>> Developer change applied and committed.")
-print(">> JupiterValuationClient now applies a 1.5% handling fee to totalValueUsd.")
-print(">> Baseline value 8500000.00 in the scenario is now stale.")
+    new_status = set_status(True)
+    print(">> Ops requested a 1.5% port handling fee on Jupiter valuations (JIRA-4821).")
+    print(f">> Backend runtime toggle flipped: handlingFeeEnabled = {new_status}")
+    print(">> This takes effect immediately for ALL callers: legacy UI, web UI, and agent tests.")
+    print(">> Baseline values in the regression suite are now stale.")

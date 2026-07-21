@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Trafigura QA Automation — Control Center</title>
+<style>
+  :root {
+    --bg: #0d1117; --canvas: #010409; --panel: #161b22; --border: #30363d;
+    --text: #c9d1d9; --muted: #8b949e; --link: #58a6ff; --green: #3fb950;
+    --amber: #d29922; --purple: #a371f7; --red: #f85149;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { font-family: var(--font); font-size: 14px; margin: 0; background: var(--canvas); color: var(--text); }
+  .topbar { border-bottom: 1px solid var(--border); padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; }
+  .topbar h1 { font-size: 17px; margin: 0; }
+  .topbar p { font-size: 12px; color: var(--muted); margin: 2px 0 0; }
+  .backend-badge { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); font-family: var(--mono); }
+  .backend-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+  .backend-dot.up { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .backend-dot.down { background: var(--red); }
+  .backend-dot.fee-on { background: var(--amber); box-shadow: 0 0 6px var(--amber); }
+
+  .tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--border); padding: 0 24px; background: var(--panel); }
+  .tab { padding: 12px 18px; font-size: 13.5px; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; }
+  .tab.active { color: var(--text); border-bottom-color: var(--link); font-weight: 600; }
+  .tab:hover { color: var(--text); }
+
+  .view { display: none; height: calc(100vh - 110px); }
+  .view.active { display: block; }
+  iframe { width: 100%; height: 100%; border: none; }
+
+  .agent-view { padding: 20px 24px; overflow-y: auto; }
+  .controls { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+  button {
+    font-family: var(--font); font-size: 13px; font-weight: 500; padding: 7px 14px;
+    border-radius: 6px; border: 1px solid rgba(240,246,252,0.1); cursor: pointer; color: white;
+  }
+  #btn-reset { background: var(--purple); }
+  #btn-dev-change { background: #9a6700; }
+  #btn-run { background: #238636; }
+  button:hover { filter: brightness(1.1); }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .stream { border: 1px solid var(--border); border-radius: 8px; background: var(--panel); padding: 16px; min-height: 300px; }
+  .event { margin-bottom: 12px; padding-left: 14px; border-left: 2px solid var(--border); }
+  .event.reasoning { border-left-color: var(--link); }
+  .event.tool_call { border-left-color: var(--amber); }
+  .event.tool_result { border-left-color: var(--green); }
+  .event.final { border-left-color: var(--purple); background: rgba(163,113,247,0.08); padding: 10px 14px; border-radius: 6px; }
+  .event.error { border-left-color: var(--red); }
+  .event-label { font-family: var(--mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin-bottom: 4px; }
+  .event-body { font-size: 13px; white-space: pre-wrap; }
+  .event-body.mono { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  .thinking { display: inline-flex; align-items: center; gap: 6px; color: var(--amber); font-size: 12.5px; font-family: var(--mono); }
+  .spinner { width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--border); border-top-color: var(--amber); animation: spin 0.7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div>
+      <h1>Trafigura QA Automation — Control Center</h1>
+      <p>buksai/AI-QA-POC/trafigura-scenario-v2 · one backend, three views · Huseynbala Gurbanli</p>
+    </div>
+    <div class="backend-badge">
+      <span class="backend-dot" id="backend-dot"></span>
+      <span id="backend-text">checking backend...</span>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" data-view="agent">POC AI Engineer</div>
+    <div class="tab" data-view="legacy">Trafigura Enterprise Legacy Demo</div>
+    <div class="tab" data-view="web">New System</div>
+  </div>
+
+  <div class="view active agent-view" id="view-agent">
+    <div class="controls">
+      <button id="btn-reset">↺ Reset agent workspace</button>
+      <button id="btn-dev-change">Apply dev change (toggle handling fee — affects ALL tabs live)</button>
+      <button id="btn-run">▶ Run autonomous agent</button>
+    </div>
+    <div class="stream" id="stream">
+      <p style="color:var(--muted); font-size:13px;">Click "Run autonomous agent" to start. The agent's tests call the SAME live backend as the other two tabs — try creating a trade in "New System", then toggle the dev change here and re-check that trade's valuation there.</p>
+    </div>
+  </div>
+
+  <div class="view" id="view-legacy"><iframe src="/legacy"></iframe></div>
+  <div class="view" id="view-web"><iframe src="/web"></iframe></div>
+
+<script>
+document.querySelectorAll(".tab").forEach(tab => {
+  tab.addEventListener("click", () => {
+    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+    document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+    tab.classList.add("active");
+    document.getElementById("view-" + tab.dataset.view).classList.add("active");
+  });
+});
+
+async function refreshBackendStatus() {
+  const dot = document.getElementById("backend-dot");
+  const text = document.getElementById("backend-text");
+  try {
+    const res = await fetch("/api/backend-status");
+    const data = await res.json();
+    if (data.error) {
+      dot.className = "backend-dot down";
+      text.textContent = "backend unreachable";
+    } else if (data.handlingFeeEnabled) {
+      dot.className = "backend-dot fee-on";
+      text.textContent = "backend up — handling fee ON";
+    } else {
+      dot.className = "backend-dot up";
+      text.textContent = "backend up — handling fee OFF";
+    }
+  } catch (e) {
+    dot.className = "backend-dot down";
+    text.textContent = "backend unreachable";
+  }
+}
+refreshBackendStatus();
+setInterval(refreshBackendStatus, 3000);
+
+const streamEl = document.getElementById("stream");
+
+function addEvent(kind, label, body, mono) {
+  const div = document.createElement("div");
+  div.className = "event " + kind;
+  div.innerHTML = `<div class="event-label">${label}</div><div class="event-body${mono ? ' mono' : ''}"></div>`;
+  div.querySelector(".event-body").textContent = body;
+  streamEl.appendChild(div);
+  streamEl.scrollTop = streamEl.scrollHeight;
+  return div;
+}
+
+document.getElementById("btn-reset").onclick = async (e) => {
+  e.target.disabled = true;
+  const res = await fetch("/api/reset-agent-workspace", { method: "POST" });
+  const data = await res.json();
+  addEvent("tool_result", "agent workspace reset", data.output || "(reset)", true);
+  refreshBackendStatus();
+  e.target.disabled = false;
+};
+
+document.getElementById("btn-dev-change").onclick = async (e) => {
+  e.target.disabled = true;
+  const res = await fetch("/api/apply-dev-change", { method: "POST" });
+  const data = await res.json();
+  addEvent("tool_result", "dev change applied (live toggle)", data.output, true);
+  refreshBackendStatus();
+  e.target.disabled = false;
+};
+
+document.getElementById("btn-run").onclick = () => {
+  const btn = document.getElementById("btn-run");
+  btn.disabled = true;
+  streamEl.innerHTML = "";
+  const thinking = document.createElement("div");
+  thinking.className = "thinking";
+  thinking.innerHTML = '<span class="spinner"></span> agent is running...';
+  streamEl.appendChild(thinking);
+
+  const source = new EventSource("/api/run-agent");
+
+  source.onmessage = (event) => {
+    const { kind, data } = JSON.parse(event.data);
+    if (kind === "start") {
+      addEvent("reasoning", "task given to agent", data.task);
+    } else if (kind === "reasoning") {
+      addEvent("reasoning", "agent reasoning", data.text);
+    } else if (kind === "tool_call") {
+      addEvent("tool_call", "tool call → " + data.name, JSON.stringify(data.input, null, 2), true);
+    } else if (kind === "tool_result") {
+      const resultStr = JSON.stringify(data.result, null, 2);
+      addEvent("tool_result", "result ← " + data.name, resultStr.slice(0, 1500), true);
+    } else if (kind === "final") {
+      addEvent("final", "AGENT SUMMARY", data.summary);
+    } else if (kind === "error") {
+      addEvent("error", "error", data.message);
+    }
+  };
+
+  source.addEventListener("done", () => {
+    thinking.remove();
+    source.close();
+    btn.disabled = false;
+    refreshBackendStatus();
+  });
+
+  source.onerror = () => {
+    thinking.remove();
+    source.close();
+    btn.disabled = false;
+  };
+};
+</script>
+</body>
+</html>

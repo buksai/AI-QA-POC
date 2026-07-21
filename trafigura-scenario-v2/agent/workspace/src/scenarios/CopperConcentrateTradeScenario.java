@@ -1,76 +1,76 @@
 package scenarios;
 
-import actions.*;
-import system.Trade;
-import system.TradeValuation;
+import httpclient.BackendClient;
 
 /**
- * END-TO-END REGRESSION SCENARIO
- * Business flow: create a copper concentrate trade, schedule a shipment tranche
- * from Colombia to China, confirm the trade, then verify the Jupiter valuation
- * matches the recorded baseline.
+ * END-TO-END REGRESSION SCENARIO — LIVE BACKEND VERSION
  *
- * This is the shape of scenario used for aggression [regression] testing —
- * built entirely from reusable actions, with baseline comparison as the
- * final evidence check.
+ * Unlike the V1 scenario (which used an isolated in-memory TradeCaptureSystem),
+ * this version calls the REAL running backend over HTTP. This is the same
+ * backend the legacy WPF-style UI and the new web UI both use — one live
+ * system, one source of truth. Requires the backend to be running:
+ *   java -cp out api.TradeApiServer 5100
+ *
+ * Baseline note: assertions check totalValueUsd against qty x $4,250/t, with
+ * an additional x1.015 factor applied when the backend's handling-fee
+ * runtime toggle is enabled (POST /api/admin/handling-fee). Toggling that
+ * flag is the "developer changes the business logic" event in this version
+ * of the demo — a real runtime change, not a source edit.
  */
 public class CopperConcentrateTradeScenario {
 
+    private static final BackendClient backend = new BackendClient();
+
     public static void testCreateAndValueCopperConcentrateTrade() {
-        ActionContext ctx = new ActionContext();
+        String tradeId = backend.createTrade("Copper Concentrate", "Southern Metals Corp");
+        backend.addTranche(tradeId, "2026-09", 2000.0, "Buenaventura", "Qingdao");
+        backend.confirmTrade(tradeId);
 
-        // Step 1: create the trade
-        Trade trade = CreateTradeAction.run(ctx, "Copper Concentrate", "Southern Metals Corp");
+        double total = backend.getValuationTotalUsd(tradeId);
+        String status = backend.getTradeStatus(tradeId);
+        double qty = backend.getTradeTotalQuantity(tradeId);
 
-        // Step 2: schedule one shipment tranche (2,000 tonnes, Colombia -> China)
-        AddTrancheAction.run(ctx, "2026-09", 2000.0, "Buenaventura", "Qingdao");
-
-        // Step 3: confirm the trade
-        ConfirmTradeAction.run(ctx);
-
-        // Step 4: get valuation from Jupiter
-        TradeValuation valuation = GetJupiterValuationAction.run(ctx);
-
-        // Step 5: compare against recorded baseline evidence
-        CompareBaselineAction.run("trade.status", trade.getStatus().toString(), "CONFIRMED");
-        CompareBaselineAction.runNumeric("trade.totalQuantityTonnes", trade.totalQuantityTonnes(), 2000.0, 0.001);
-        CompareBaselineAction.runNumeric("valuation.totalValueUsd", valuation.getTotalValueUsd(), 8500000.00, 0.01);
+        assertEquals("trade.status", "CONFIRMED", status);
+        assertNumeric("trade.totalQuantityTonnes", 2000.0, qty, 0.001);
+        // Baseline: 2,000 t x $4,250/t = $8,500,000.00 (fee OFF)
+        assertNumeric("valuation.totalValueUsd", 8500000.00, total, 0.01);
     }
 
-    /**
-     * Amendment scenario: create and confirm a trade, then amend the tranche
-     * quantity mid-lifecycle (a common real-world event — e.g. the counterparty
-     * revises the delivery amount). Re-fetch the Jupiter valuation and verify
-     * the new baseline reflects the amended quantity.
-     */
     public static void testAmendTradeQuantityAndRevalue() {
-        ActionContext ctx = new ActionContext();
+        String tradeId = backend.createTrade("Copper Concentrate", "Southern Metals Corp");
+        backend.addTranche(tradeId, "2026-09", 2000.0, "Buenaventura", "Qingdao");
+        backend.confirmTrade(tradeId);
 
-        // Initial trade: 2000 tonnes copper concentrate, Colombia -> China
-        Trade trade = CreateTradeAction.run(ctx, "Copper Concentrate", "Southern Metals Corp");
-        AddTrancheAction.run(ctx, "2026-09", 2000.0, "Buenaventura", "Qingdao");
-        ConfirmTradeAction.run(ctx);
+        backend.amendTranche(tradeId, 0, 2500.0);
+        double total = backend.getValuationTotalUsd(tradeId);
+        String status = backend.getTradeStatus(tradeId);
+        double qty = backend.getTradeTotalQuantity(tradeId);
 
-        // Counterparty amends the delivery: uprated from 2000 to 2500 tonnes
-        AmendTradeAction.run(ctx, 0, 2500.0);
-
-        // Re-fetch valuation from Jupiter — should reflect the amended quantity
-        TradeValuation revaluation = GetJupiterValuationAction.run(ctx);
-
-        // Baseline evidence checks against the amended trade
-        CompareBaselineAction.run("trade.status", trade.getStatus().toString(), "CONFIRMED");
-        CompareBaselineAction.runNumeric("trade.totalQuantityTonnes", trade.totalQuantityTonnes(), 2500.0, 0.001);
-        CompareBaselineAction.runNumeric("revaluation.totalValueUsd", revaluation.getTotalValueUsd(), 10625000.00, 0.01);
+        assertEquals("trade.status", "CONFIRMED", status);
+        assertNumeric("trade.totalQuantityTonnes", 2500.0, qty, 0.001);
+        // Baseline: 2,500 t x $4,250/t = $10,625,000.00 (fee OFF)
+        assertNumeric("revaluation.totalValueUsd", 10625000.00, total, 0.01);
     }
 
     public static void testMultiTrancheTradeQuantity() {
-        ActionContext ctx = new ActionContext();
+        String tradeId = backend.createTrade("Copper Concentrate", "Andes Mining SA");
+        backend.addTranche(tradeId, "2026-08", 1500.0, "Buenaventura", "Qingdao");
+        backend.addTranche(tradeId, "2026-11", 1500.0, "Buenaventura", "Qingdao");
+        backend.confirmTrade(tradeId);
 
-        Trade trade = CreateTradeAction.run(ctx, "Copper Concentrate", "Andes Mining SA");
-        AddTrancheAction.run(ctx, "2026-08", 1500.0, "Buenaventura", "Qingdao");
-        AddTrancheAction.run(ctx, "2026-11", 1500.0, "Buenaventura", "Qingdao");
-        ConfirmTradeAction.run(ctx);
+        double qty = backend.getTradeTotalQuantity(tradeId);
+        assertNumeric("trade.totalQuantityTonnes", 3000.0, qty, 0.001);
+    }
 
-        CompareBaselineAction.runNumeric("trade.totalQuantityTonnes", trade.totalQuantityTonnes(), 3000.0, 0.001);
+    private static void assertEquals(String field, String expected, String actual) {
+        if (actual == null || !actual.equals(expected)) {
+            throw new AssertionError("Baseline mismatch on field '" + field + "': expected=" + expected + " actual=" + actual);
+        }
+    }
+
+    private static void assertNumeric(String field, double expected, double actual, double tolerance) {
+        if (Math.abs(actual - expected) > tolerance) {
+            throw new AssertionError("Baseline mismatch on field '" + field + "': expected=" + expected + " actual=" + actual + " (tolerance=" + tolerance + ")");
+        }
     }
 }
