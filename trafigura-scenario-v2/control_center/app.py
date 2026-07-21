@@ -73,16 +73,46 @@ def run_agent_stream():
 
 @app.route("/api/reset-agent-workspace", methods=["POST"])
 def reset_agent_workspace():
-    log = subprocess.run(
-        ["git", "log", "--oneline", "--reverse"], cwd=qa_agent.WORKSPACE,
+    # SAFETY: agent/workspace has no git repo of its own - it's tracked as
+    # plain files inside the main repo. A full `git reset --hard` here would
+    # blow away the ENTIRE repository back to its first commit, deleting
+    # unrelated work like control_center/ itself. Every git operation below
+    # is explicitly scoped to the workspace path only, via `-- <path>`, so it
+    # can never touch anything outside this folder.
+    repo_root = subprocess.run(
+        ["git", "rev-parse", "--show-toplevel"], cwd=qa_agent.WORKSPACE,
         capture_output=True, text=True
-    ).stdout.strip().splitlines()
-    if not log:
-        return {"output": "No commits found in agent workspace."}
-    first_commit = log[0].split()[0]
-    r = subprocess.run(["git", "reset", "--hard", first_commit], cwd=qa_agent.WORKSPACE,
-                       capture_output=True, text=True)
-    return {"output": r.stdout + r.stderr}
+    ).stdout.strip()
+    rel_path = os.path.relpath(qa_agent.WORKSPACE, repo_root)
+
+    restore = subprocess.run(
+        ["git", "checkout", "HEAD", "--", rel_path],
+        cwd=repo_root, capture_output=True, text=True
+    )
+    clean = subprocess.run(
+        ["git", "clean", "-fd", "--", rel_path],
+        cwd=repo_root, capture_output=True, text=True
+    )
+    files_output = (restore.stdout + restore.stderr + clean.stdout + clean.stderr).strip() or "Workspace files restored to last committed state."
+
+    # Reset must also turn the backend's live fee toggle back OFF - it's an
+    # in-memory flag on the running Java process, so resetting test files
+    # alone does not touch it. Without this, the fee stays ON forever after
+    # the first "Break the suite" click and valuations never return to baseline.
+    import urllib.request
+    try:
+        req = urllib.request.Request(
+            "http://127.0.0.1:5100/api/admin/handling-fee",
+            data=b'{"enabled":"false"}',
+            headers={"Content-Type": "application/json"}, method="POST"
+        )
+        with urllib.request.urlopen(req, timeout=3) as resp:
+            import json as _json
+            fee_status = _json.loads(resp.read())
+        backend_output = f"Backend fee toggle reset: handlingFeeEnabled={fee_status['handlingFeeEnabled']}"
+    except Exception as e:
+        backend_output = f"Could not reset backend fee toggle (is it running?): {e}"
+    return {"output": files_output + "\n" + backend_output}
 
 
 @app.route("/api/apply-dev-change", methods=["POST"])
