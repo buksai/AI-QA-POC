@@ -3,26 +3,27 @@
 **Author:** Huseynbala Gurbanli
 
 A real, working proof of concept demonstrating AI-assisted QA automation for
-Trafigura's trade capture system — a Java-based, action-driven test framework
-covering commodity trade lifecycle scenarios (trade creation, tranche
-shipments, external valuation via Jupiter, baseline evidence checks).
+a Trafigura-style trade capture system: a live Java backend, two synchronized
+front-ends (legacy desktop-style and modern web), and an autonomous AI agent
+that investigates and heals a 54-scenario regression suite running on 50
+concurrent workers — all real, nothing simulated.
 
-**Everything relevant is in [`trafigura-scenario/`](./trafigura-scenario/).**
-See [`trafigura-scenario/README_TRAFIGURA.md`](./trafigura-scenario/README_TRAFIGURA.md)
-for the full run order and rationale.
+**Everything is in [`trafigura-scenario-v2/`](./trafigura-scenario-v2/).**
+See [`trafigura-scenario-v2/README_V2.md`](./trafigura-scenario-v2/README_V2.md)
+for full setup and run instructions.
 
 ## Use cases covered
 
-1. **Self-healing regression tests** (priority) — AI reads a real test failure
-   and a real git diff, proposes a corrected scenario baseline, applies it
-   after human approval, and re-runs to green
-2. **Smart test maintenance** — AI reads a real code change and predicts
-   which scenarios are impacted, before any test even runs
-3. **Agent-based issue creation** — AI drafts a ready-to-file bug ticket from
-   real test failure output
-4. **Bonus: WPF → Playwright action migration** — AI migrates a legacy WPF
-   desktop UI action to the equivalent Playwright web action, for the planned
-   React UI migration
+1. **Self-healing regression tests** — the agent investigates real failures,
+   checks a shared team knowledge base and approved requirements, then
+   proposes and applies fixes at scale (one call can fix 30+ files at once)
+2. **Smart test maintenance** — impact analysis from real backend
+   configuration changes and real git diffs
+3. **API test generation from Fiddler captures** — the agent reads a real
+   captured HTTP session and generates a runnable test action class from it
+4. **Agent-based issue creation** — genuine product defects (backed by an
+   approved requirement) get a well-evidenced ticket; stale tests get fixed
+   instead — the agent never confuses the two
 
 ## Requirements
 
@@ -32,19 +33,5 @@ for the full run order and rationale.
 
 ## Quick start
 
-```bash
-cd trafigura-scenario
-python3 web_app.py
-```
-Open `localhost:5003` and click through the 7 steps in order.
-
-Full details, CLI-only instructions, and the reasoning behind the design are
-in `trafigura-scenario/README_TRAFIGURA.md`.
-
-## V2 — advanced version
-
-[`trafigura-scenario-v2/`](./trafigura-scenario-v2/) is a more advanced build:
-a real running backend, two functioning UIs (legacy WPF-style + new web-style)
-both driving the same live business logic, and an autonomous AI agent that
-investigates and decides for itself rather than following a fixed sequence of
-buttons. See [`trafigura-scenario-v2/README_V2.md`](./trafigura-scenario-v2/README_V2.md).
+See [`trafigura-scenario-v2/README_V2.md`](./trafigura-scenario-v2/README_V2.md)
+for the full backend + control-center startup sequence and demo flow.
